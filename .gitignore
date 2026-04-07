@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+docs-site/node_modules/
+docs-site/build/
+docs-site/.docusaurus/
+
+# lore repo artifacts (rebuildable)
+.lore

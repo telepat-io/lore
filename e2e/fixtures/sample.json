@@ -1,0 +1,9 @@
+{
+  "title": "Sample JSON Document",
+  "description": "A test fixture for JSON ingestion",
+  "tags": ["test", "fixture"],
+  "content": {
+    "section1": "This is the first section of content.",
+    "section2": "This is the second section with more detail."
+  }
+}

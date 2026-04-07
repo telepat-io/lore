@@ -1,0 +1,91 @@
+{
+  "name": "@telepat/lore",
+  "version": "0.1.0",
+  "description": "Build and maintain persistent LLM knowledge bases from any content.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/telepat-io/lore.git"
+  },
+  "homepage": "https://docs.telepat.io/lore",
+  "bugs": {
+    "url": "https://github.com/telepat-io/lore/issues"
+  },
+  "bin": {
+    "lore": "dist/lore.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup src/bin/lore.ts --format esm --dts --clean --out-dir dist",
+    "dev": "tsx src/bin/lore.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "npm run typecheck && eslint src",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.js",
+    "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.e2e.config.js",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.js --coverage",
+    "test:all": "npm test && npm run test:e2e",
+    "prepublishOnly": "npm run lint && npm run test:coverage && npm run build",
+    "docs:start": "npm --prefix docs-site run start",
+    "docs:build": "npm --prefix docs-site run build",
+    "docs:serve": "npm --prefix docs-site run serve"
+  },
+  "keywords": [
+    "cli",
+    "ink",
+    "knowledge-base",
+    "llm",
+    "openrouter",
+    "replicate",
+    "wiki",
+    "markdown",
+    "rag"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@inkjs/ui": "^2",
+    "@modelcontextprotocol/sdk": "^1",
+    "better-sqlite3": "^9",
+    "chalk": "^5",
+    "chokidar": "^4",
+    "commander": "^12",
+    "docx": "^8",
+    "env-paths": "^3",
+    "execa": "^8",
+    "ink": "^6",
+    "keytar": "^7",
+    "openai": "^4",
+    "puppeteer": "^22",
+    "react": "^19",
+    "rehype-parse": "^9",
+    "rehype-remark": "^10",
+    "remark": "^15",
+    "remark-parse": "^11",
+    "remark-stringify": "^11",
+    "replicate": "^1",
+    "unified": "^11",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9",
+    "@types/better-sqlite3": "^7",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "eslint": "^9",
+    "globals": "^16",
+    "jest": "^30",
+    "msw": "^2",
+    "ts-jest": "^29",
+    "tsup": "^8",
+    "tsx": "^4",
+    "typescript": "^5",
+    "typescript-eslint": "^8"
+  }
+}
