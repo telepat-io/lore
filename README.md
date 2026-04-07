@@ -41,7 +41,7 @@ References:
 Lore uses OpenRouter for core LLM tasks (for example compile/query/explain), and Replicate for specialized document/vision parsing.
 
 - Default OpenRouter model: `moonshotai/kimi-k2.5`
-- Default repo config: `temperature: 0.3`, `maxTokens: 4096`
+- Default repo config: `temperature: 0.3` (`maxTokens` is optional)
 - Recommended alternatives: `anthropic/claude-3.5-sonnet`, `google/gemini-pro-1.5`
 - Replicate document parser: `cuuupid/marker`
 - Replicate vision parser: `yorickvp/llava-13b`
@@ -115,7 +115,19 @@ lore settings set cloudflareAccountId <value> --scope global
 lore settings set model moonshotai/kimi-k2.5 --scope repo
 lore settings set temperature 0.3 --scope repo
 lore settings set maxTokens 4096 --scope repo
+lore settings unset maxTokens --scope repo
 ```
+
+Token limit behavior:
+
+- If `maxTokens` is unset, Lore omits `max_tokens` in OpenRouter requests and uses the provider/model default output limit.
+- If `maxTokens` is set, Lore sends that value explicitly.
+
+Compile truncation safety:
+
+- Lore detects truncated or structurally incomplete compile responses (for example unterminated YAML frontmatter).
+- On detection, Lore retries with smaller batch sizes automatically.
+- If truncation persists at batch size 1, compile fails with an actionable error and does not write partial article files.
 
 Security model:
 

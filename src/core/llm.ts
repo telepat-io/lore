@@ -15,10 +15,12 @@ export interface LlmStreamOptions {
 export interface LlmResult {
   content: string;
   tokensUsed: number;
+  finishReason: string | null;
+  wasTruncated: boolean;
 }
 
 /** Create an OpenRouter-backed OpenAI client */
-export async function createClient(cwd: string): Promise<{ client: OpenAI; model: string; temperature: number; maxTokens: number }> {
+export async function createClient(cwd: string): Promise<{ client: OpenAI; model: string; temperature: number; maxTokens?: number }> {
   const root = await requireRepo(cwd);
   const global = await readGlobalConfig();
   const repo = await readRepoConfig(root);
@@ -41,22 +43,30 @@ export async function streamChat(cwd: string, opts: LlmStreamOptions): Promise<L
   const stream = await client.chat.completions.create({
     model,
     temperature,
-    max_tokens: maxTokens,
     messages: opts.messages,
     stream: true,
+    ...(maxTokens !== undefined ? { max_tokens: maxTokens } : {}),
   });
 
   let content = '';
   let tokensUsed = 0;
+  let finishReason: string | null = null;
 
   for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta?.content ?? '';
     content += delta;
     if (delta && opts.onToken) opts.onToken(delta);
     if (chunk.usage) tokensUsed = chunk.usage.total_tokens;
+    const chunkFinishReason = chunk.choices[0]?.finish_reason;
+    if (chunkFinishReason) finishReason = chunkFinishReason;
   }
 
-  return { content, tokensUsed };
+  return {
+    content,
+    tokensUsed,
+    finishReason,
+    wasTruncated: finishReason === 'length',
+  };
 }
 
 /** Non-streaming LLM call */
@@ -66,12 +76,16 @@ export async function chat(cwd: string, messages: LlmMessage[]): Promise<LlmResu
   const response = await client.chat.completions.create({
     model,
     temperature,
-    max_tokens: maxTokens,
     messages,
+    ...(maxTokens !== undefined ? { max_tokens: maxTokens } : {}),
   });
+
+  const finishReason = response.choices[0]?.finish_reason ?? null;
 
   return {
     content: response.choices[0]?.message?.content ?? '',
     tokensUsed: response.usage?.total_tokens ?? 0,
+    finishReason,
+    wasTruncated: finishReason === 'length',
   };
 }

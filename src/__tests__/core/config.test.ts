@@ -20,7 +20,7 @@ describe('readRepoConfig', () => {
     const config = await readRepoConfig(tmpDir);
     expect(config.model).toBe('moonshotai/kimi-k2.5');
     expect(config.temperature).toBe(0.3);
-    expect(config.maxTokens).toBe(4096);
+    expect(config.maxTokens).toBeUndefined();
   });
 });
 
@@ -31,6 +31,14 @@ describe('writeRepoConfig', () => {
     expect(config.model).toBe('anthropic/claude-3.5-sonnet');
     expect(config.temperature).toBe(0.7);
     expect(config.maxTokens).toBe(8192);
+  });
+
+  it('persists config when maxTokens is unset', async () => {
+    await writeRepoConfig(tmpDir, { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7 });
+    const config = await readRepoConfig(tmpDir);
+    expect(config.model).toBe('anthropic/claude-3.5-sonnet');
+    expect(config.temperature).toBe(0.7);
+    expect(config.maxTokens).toBeUndefined();
   });
 
   it('overwrites existing config completely', async () => {

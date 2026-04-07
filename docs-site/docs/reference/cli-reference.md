@@ -47,7 +47,12 @@ lore settings unset <key> [--scope global|repo|all]
 Common keys:
 
 - Global: `openrouterApiKey`, `replicateApiToken`, `cloudflareAccountId`, `cloudflareToken`
-- Repo: `model`, `temperature`, `maxTokens`, `webExporter`
+- Repo: `model`, `temperature`, `maxTokens` (optional), `webExporter`
+
+Notes:
+
+- `lore settings unset maxTokens --scope repo` removes the explicit token cap.
+- When `maxTokens` is unset, Lore omits `max_tokens` in LLM requests.
 
 ## Exit Codes
 

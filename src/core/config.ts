@@ -16,7 +16,7 @@ const globalConfigSchema = z.object({
 const repoConfigSchema = z.object({
   model: z.string().min(1),
   temperature: z.number().min(0).max(2),
-  maxTokens: z.number().int().positive(),
+  maxTokens: z.number().int().positive().optional(),
   webExporter: z.enum(['starlight', 'vitepress']).optional(),
 });
 
@@ -30,7 +30,7 @@ export interface GlobalConfig {
 export interface RepoConfig {
   model: string;
   temperature: number;
-  maxTokens: number;
+  maxTokens?: number;
   webExporter?: 'starlight' | 'vitepress';
 }
 
@@ -164,7 +164,7 @@ export async function renderSettings(): Promise<void> {
     if (repo) {
       process.stdout.write(`- model: ${repo.model}\n`);
       process.stdout.write(`- temperature: ${repo.temperature}\n`);
-      process.stdout.write(`- maxTokens: ${repo.maxTokens}\n`);
+      process.stdout.write(`- maxTokens: ${repo.maxTokens ?? 'not set'}\n`);
       process.stdout.write(`- webExporter: ${repo.webExporter ?? 'not set'}\n`);
     }
     process.stdout.write('\nUse `lore settings list|get|set|unset` for non-interactive management.\n');
@@ -216,8 +216,8 @@ export async function renderSettings(): Promise<void> {
       ...(flowResult.repo['temperature'] !== undefined
         ? { temperature: Number(flowResult.repo['temperature']) }
         : {}),
-      ...(flowResult.repo['maxTokens'] !== undefined
-        ? { maxTokens: Number(flowResult.repo['maxTokens']) }
+      ...(Object.prototype.hasOwnProperty.call(flowResult.repo, 'maxTokens')
+        ? { maxTokens: flowResult.repo['maxTokens'] === undefined ? undefined : Number(flowResult.repo['maxTokens']) }
         : {}),
       ...(Object.prototype.hasOwnProperty.call(flowResult.repo, 'webExporter')
         ? { webExporter: flowResult.repo['webExporter'] as RepoConfig['webExporter'] }

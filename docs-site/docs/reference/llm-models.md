@@ -9,10 +9,11 @@ Lore uses OpenRouter for core LLM operations (for example compile, query, explai
 ```json
 {
   "model": "moonshotai/kimi-k2.5",
-  "temperature": 0.3,
-  "maxTokens": 4096
+  "temperature": 0.3
 }
 ```
+
+`maxTokens` is optional. If set, Lore sends `max_tokens` with that value. If unset, Lore omits `max_tokens` and relies on the provider/model default output limit.
 
 ## Recommended Models
 

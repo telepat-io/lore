@@ -35,7 +35,7 @@ function redactValue(key: string, value: unknown): unknown {
   return '***configured***';
 }
 
-function parseRepoSetting(key: string, value: string): string | number {
+function parseRepoSetting(key: string, value: string): string | number | undefined {
   if (key === 'temperature') {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
@@ -45,6 +45,9 @@ function parseRepoSetting(key: string, value: string): string | number {
   }
 
   if (key === 'maxTokens') {
+    if (value === '-') {
+      return undefined;
+    }
     const parsed = Number.parseInt(value, 10);
     if (!Number.isFinite(parsed)) {
       throw new Error('maxTokens must be an integer.');
@@ -145,10 +148,16 @@ export async function settingsSetCommand(key: string, value: string, opts: Optio
     if ((scope === 'repo' || scope === 'all') && REPO_KEYS.has(key)) {
       const root = await requireRepo(process.cwd());
       const current = await readRepoConfig(root);
+      const parsedValue = parseRepoSetting(key, value);
       const next = {
         ...current,
-        [key]: parseRepoSetting(key, value),
+        [key]: parsedValue,
       };
+
+      if (key === 'maxTokens' && parsedValue === undefined) {
+        delete next['maxTokens'];
+      }
+
       await writeRepoConfig(root, next);
       process.stdout.write(`Updated repo setting: ${key}\n`);
       return;
@@ -167,6 +176,16 @@ export async function settingsUnsetCommand(key: string, opts: OptionValues): Pro
     if ((scope === 'global' || scope === 'all') && GLOBAL_KEYS.has(key)) {
       await unsetGlobalSetting(key);
       process.stdout.write(`Unset global setting: ${key}\n`);
+      return;
+    }
+
+    if ((scope === 'repo' || scope === 'all') && key === 'maxTokens') {
+      const root = await requireRepo(process.cwd());
+      const current = await readRepoConfig(root);
+      const next = { ...current };
+      delete next['maxTokens'];
+      await writeRepoConfig(root, next);
+      process.stdout.write('Unset repo setting: maxTokens\n');
       return;
     }
 

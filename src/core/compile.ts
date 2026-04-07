@@ -20,6 +20,13 @@ interface ManifestEntry {
   compiledAt?: string;
 }
 
+class RetryableCompileError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RetryableCompileError';
+  }
+}
+
 const BATCH_SIZE = 20;
 
 const SYSTEM_PROMPT = `You are a knowledge librarian. Given raw source documents, produce structured wiki articles in Markdown.
@@ -95,47 +102,31 @@ export async function compile(cwd: string, opts: CompileOptions = {}): Promise<C
   await fs.mkdir(articlesDir, { recursive: true });
 
   let articlesWritten = 0;
-  let batchesDone = 0;
-  const totalBatches = Math.ceil(toCompile.length / BATCH_SIZE);
+  let processedCount = 0;
+  const total = toCompile.length;
 
-  // Process in batches
-  for (let i = 0; i < toCompile.length; i += BATCH_SIZE) {
-    const batch = toCompile.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < toCompile.length;) {
+    let batchSize = Math.min(BATCH_SIZE, toCompile.length - i);
+    let batchSucceeded = false;
 
-    const sourceTexts = batch.map((entry, idx) =>
-      `=== SOURCE ${idx + 1}: ${entry.meta.title} ===\n\n${entry.extracted}`
-    ).join('\n\n');
+    while (!batchSucceeded) {
+      const batch = toCompile.slice(i, i + batchSize);
 
-    const messages: LlmMessage[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: `Compile the following ${batch.length} source document(s) into wiki articles:\n\n${sourceTexts}`,
-      },
-    ];
-
-    const result = await streamChat(cwd, { messages });
-
-    // Parse articles from response
-    const articles = parseArticleOutput(result.content);
-
-    for (const article of articles) {
-      const slug = slugify(article.title || `article-${articlesWritten}`);
-      const filePath = path.join(articlesDir, `${slug}.md`);
-      await fs.writeFile(filePath, article.content);
-      articlesWritten++;
+      try {
+        const written = await compileBatch(cwd, batch, articlesDir, articlesWritten, manifest, manifestPath);
+        articlesWritten += written;
+        processedCount += batch.length;
+        i += batch.length;
+        opts.onProgress?.(processedCount, total);
+        batchSucceeded = true;
+      } catch (error) {
+        const canRetry = error instanceof RetryableCompileError && batchSize > 1;
+        if (!canRetry) {
+          throw error;
+        }
+        batchSize = Math.max(1, Math.floor(batchSize / 2));
+      }
     }
-
-    // Update manifest for this batch
-    const now = new Date().toISOString();
-    for (const entry of batch) {
-      if (!manifest[entry.sha256]) manifest[entry.sha256] = { mtime: now };
-      manifest[entry.sha256]!.compiledAt = now;
-    }
-    await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
-
-    batchesDone++;
-    opts.onProgress?.(batchesDone, totalBatches);
   }
 
   // Rebuild index after compile
@@ -151,6 +142,58 @@ export async function compile(cwd: string, opts: CompileOptions = {}): Promise<C
 interface ParsedArticle {
   title: string;
   content: string;
+}
+
+async function compileBatch(
+  cwd: string,
+  batch: { sha256: string; extracted: string; meta: { title: string } }[],
+  articlesDir: string,
+  articleOffset: number,
+  manifest: Record<string, ManifestEntry>,
+  manifestPath: string,
+): Promise<number> {
+  const sourceTexts = batch.map((entry, idx) =>
+    `=== SOURCE ${idx + 1}: ${entry.meta.title} ===\n\n${entry.extracted}`
+  ).join('\n\n');
+
+  const messages: LlmMessage[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    {
+      role: 'user',
+      content: `Compile the following ${batch.length} source document(s) into wiki articles:\n\n${sourceTexts}`,
+    },
+  ];
+
+  const result = await streamChat(cwd, { messages });
+  if (result.wasTruncated) {
+    throw new RetryableCompileError('Model response was truncated due to token length.');
+  }
+
+  const articles = parseArticleOutput(result.content);
+  if (articles.length === 0) {
+    throw new RetryableCompileError('No articles were returned by the model response.');
+  }
+
+  for (const article of articles) {
+    assertArticleIntegrity(article);
+  }
+
+  let written = 0;
+  for (const article of articles) {
+    const slug = slugify(article.title || `article-${articleOffset + written}`);
+    const filePath = path.join(articlesDir, `${slug}.md`);
+    await fs.writeFile(filePath, article.content);
+    written++;
+  }
+
+  const now = new Date().toISOString();
+  for (const entry of batch) {
+    if (!manifest[entry.sha256]) manifest[entry.sha256] = { mtime: now };
+    manifest[entry.sha256]!.compiledAt = now;
+  }
+  await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+
+  return written;
 }
 
 function parseArticleOutput(output: string): ParsedArticle[] {
@@ -174,6 +217,24 @@ function parseArticleOutput(output: string): ParsedArticle[] {
     }
     return { title, content: part };
   });
+}
+
+function assertArticleIntegrity(article: ParsedArticle): void {
+  const content = article.content.trim();
+  if (!content) {
+    throw new RetryableCompileError('Received an empty article from model output.');
+  }
+
+  if (content.startsWith('---\n')) {
+    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---(\n|$)/);
+    if (!frontmatterMatch) {
+      throw new RetryableCompileError('Detected unterminated YAML frontmatter in model output.');
+    }
+  }
+
+  if (article.title === 'Untitled') {
+    throw new RetryableCompileError('Article title could not be extracted from model output.');
+  }
 }
 
 function slugify(input: string): string {

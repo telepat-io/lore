@@ -105,7 +105,7 @@ export function SettingsCliFlow({ initialGlobal, initialRepo, onDone }: Settings
       base.push(
         { action: 'model', label: `Model: ${effectiveRepo.model}` },
         { action: 'temperature', label: `Temperature: ${effectiveRepo.temperature}` },
-        { action: 'maxTokens', label: `Max tokens: ${effectiveRepo.maxTokens}` },
+        { action: 'maxTokens', label: `Max tokens: ${effectiveRepo.maxTokens ?? 'not set'}` },
         { action: 'webExporter', label: `Web exporter: ${effectiveRepo.webExporter ?? 'not set'}` },
       );
     }
@@ -203,7 +203,7 @@ export function SettingsCliFlow({ initialGlobal, initialRepo, onDone }: Settings
     }
 
     if (action === 'maxTokens' && effectiveRepo) {
-      const current = String(effectiveRepo.maxTokens);
+      const current = effectiveRepo.maxTokens === undefined ? '' : String(effectiveRepo.maxTokens);
       setEditing({ action, label: action, value: current, isSecret: false });
       setDraft(current);
       return;
@@ -280,6 +280,19 @@ export function SettingsCliFlow({ initialGlobal, initialRepo, onDone }: Settings
     }
 
     if (action === 'maxTokens') {
+      if (value === '') {
+        setEditing(null);
+        setDraft('');
+        return;
+      }
+
+      if (value === '-') {
+        setRepoEdits((prev) => ({ ...prev, maxTokens: undefined }));
+        setEditing(null);
+        setDraft('');
+        return;
+      }
+
       const parsed = Number.parseInt(value, 10);
       if (!Number.isFinite(parsed) || parsed <= 0) {
         setError('Max tokens must be a positive integer.');

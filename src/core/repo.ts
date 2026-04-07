@@ -61,7 +61,7 @@ export async function initRepo(cwd: string): Promise<InitResult> {
   try {
     await fs.access(configPath);
   } catch {
-    await fs.writeFile(configPath, JSON.stringify({ model: 'moonshotai/kimi-k2.5', temperature: 0.3, maxTokens: 4096 }, null, 2));
+    await fs.writeFile(configPath, JSON.stringify({ model: 'moonshotai/kimi-k2.5', temperature: 0.3 }, null, 2));
   }
 
   const manifestPath = path.join(lorePath, 'manifest.json');

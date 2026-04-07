@@ -8,16 +8,17 @@ Lore uses two levels of configuration:
 
 - **Global config** (`~/.config/lore/config.json`) -- non-secret global values (for example Cloudflare account ID)
 - **Global secrets** (OS keychain) -- OpenRouter, Replicate, and Cloudflare token
-- **Per-repo config** (`.lore/config.json`) -- model, temperature, maxTokens, export preferences
+- **Per-repo config** (`.lore/config.json`) -- model, temperature, optional maxTokens, export preferences
 
 ## Per-repo Settings
 
 ```json
 {
   "model": "moonshotai/kimi-k2.5",
-  "temperature": 0.3,
-  "maxTokens": 4096
+  "temperature": 0.3
 }
+
+`maxTokens` is optional. When omitted, Lore does not send `max_tokens` to OpenRouter and uses the provider/model default completion limit.
 ```
 
 ## Interactive Editor
@@ -46,6 +47,9 @@ lore settings set maxTokens 4096 --scope repo
 
 # unset global values
 lore settings unset openrouterApiKey --scope global
+
+# unset optional repo value
+lore settings unset maxTokens --scope repo
 ```
 
 ## Precedence

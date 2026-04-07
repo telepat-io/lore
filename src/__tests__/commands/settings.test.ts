@@ -102,6 +102,20 @@ describe('settings commands', () => {
     });
   });
 
+  it('settingsSetCommand unsets maxTokens when value is -', async () => {
+    mockRequireRepo.mockResolvedValue('/tmp/repo');
+    mockReadRepoConfig.mockResolvedValue({ model: 'moonshotai/kimi-k2.5', temperature: 0.3, maxTokens: 4096 });
+
+    const { settingsSetCommand } = await loadSettingsCommands();
+
+    await settingsSetCommand('maxTokens', '-', { scope: 'repo' });
+
+    expect(mockWriteRepoConfig).toHaveBeenCalledWith('/tmp/repo', {
+      model: 'moonshotai/kimi-k2.5',
+      temperature: 0.3,
+    });
+  });
+
   it('settingsUnsetCommand delegates global key unsets', async () => {
     const { settingsUnsetCommand } = await loadSettingsCommands();
 
