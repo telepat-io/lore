@@ -3,10 +3,12 @@ import path from 'path';
 import { requireRepo } from './repo.js';
 import { streamChat, type LlmMessage } from './llm.js';
 import { rebuildIndex } from './index.js';
+import { type RunLogger } from './logger.js';
 
 export interface CompileOptions {
   force?: boolean;
   onProgress?: (done: number, total: number) => void;
+  logger?: RunLogger;
 }
 
 export interface CompileResult {
@@ -60,6 +62,7 @@ Content here with [[Wiki Links]] to related concepts.
 
 /** LLM-powered compilation: raw extracted.md → wiki articles with backlinks */
 export async function compile(cwd: string, opts: CompileOptions = {}): Promise<CompileResult> {
+  opts.logger?.stepStart('compile.init', { force: !!opts.force });
   const root = await requireRepo(cwd);
 
   // Read manifest to find uncompiled entries
@@ -95,6 +98,8 @@ export async function compile(cwd: string, opts: CompileOptions = {}): Promise<C
   }
 
   if (toCompile.length === 0) {
+    opts.logger?.info('compile.noop', { rawDirs: rawDirs.length });
+    opts.logger?.stepEnd('compile.init', { articlesWritten: 0, rawProcessed: 0 });
     return { articlesWritten: 0, articlesSkipped: rawDirs.length, rawProcessed: 0 };
   }
 
@@ -111,26 +116,46 @@ export async function compile(cwd: string, opts: CompileOptions = {}): Promise<C
 
     while (!batchSucceeded) {
       const batch = toCompile.slice(i, i + batchSize);
+      opts.logger?.stepStart('compile.batch', {
+        offset: i,
+        batchSize,
+      });
 
       try {
-        const written = await compileBatch(cwd, batch, articlesDir, articlesWritten, manifest, manifestPath);
+        const written = await compileBatch(cwd, batch, articlesDir, articlesWritten, manifest, manifestPath, opts.logger);
         articlesWritten += written;
         processedCount += batch.length;
         i += batch.length;
         opts.onProgress?.(processedCount, total);
+        opts.logger?.progress('compile.progress', processedCount, total, { lastBatchSize: batch.length });
+        opts.logger?.stepEnd('compile.batch', { written });
         batchSucceeded = true;
       } catch (error) {
+        opts.logger?.error('compile.batch', error, { offset: i, batchSize });
         const canRetry = error instanceof RetryableCompileError && batchSize > 1;
         if (!canRetry) {
           throw error;
         }
+        const nextBatchSize = Math.max(1, Math.floor(batchSize / 2));
+        opts.logger?.retry('compile.batch.retry', {
+          reason: error.message,
+          previousBatchSize: batchSize,
+          nextBatchSize,
+        });
         batchSize = Math.max(1, Math.floor(batchSize / 2));
       }
     }
   }
 
   // Rebuild index after compile
+  opts.logger?.stepStart('compile.reindex');
   await rebuildIndex(cwd);
+  opts.logger?.stepEnd('compile.reindex');
+
+  opts.logger?.stepEnd('compile.init', {
+    articlesWritten,
+    rawProcessed: toCompile.length,
+  });
 
   return {
     articlesWritten,
@@ -151,6 +176,7 @@ async function compileBatch(
   articleOffset: number,
   manifest: Record<string, ManifestEntry>,
   manifestPath: string,
+  logger?: RunLogger,
 ): Promise<number> {
   const sourceTexts = batch.map((entry, idx) =>
     `=== SOURCE ${idx + 1}: ${entry.meta.title} ===\n\n${entry.extracted}`
@@ -164,7 +190,18 @@ async function compileBatch(
     },
   ];
 
-  const result = await streamChat(cwd, { messages });
+  logger?.stepStart('compile.batch.llm', { batchSize: batch.length });
+  const result = await streamChat(cwd, {
+    messages,
+    onToken: (token) => {
+      logger?.token('compile.batch.llm.token', token);
+    },
+  });
+  logger?.stepEnd('compile.batch.llm', {
+    finishReason: result.finishReason,
+    wasTruncated: result.wasTruncated,
+    tokensUsed: result.tokensUsed,
+  });
   if (result.wasTruncated) {
     throw new RetryableCompileError('Model response was truncated due to token length.');
   }

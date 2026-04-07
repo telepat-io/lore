@@ -31,6 +31,11 @@ Lore supports a mixed ingestion pipeline, including PDFs and video URLs.
 - URLs: fetched through Jina (`r.jina.ai`) or Cloudflare Browser Rendering
 - Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`): parsed via Replicate vision model
 
+Video provenance:
+
+- Video ingest metadata now records which extractor path was used in `.lore/raw/<sha>/meta.json` under `extractor`.
+- Values include `yt-dlp` and fallback reasons such as `url-fallback-no-ytdlp`, `url-fallback-no-subs`, and `url-fallback-empty-transcript`.
+
 References:
 
 - Supported formats: https://docs.telepat.io/lore/reference/supported-formats
@@ -129,6 +134,15 @@ Compile truncation safety:
 - On detection, Lore retries with smaller batch sizes automatically.
 - If truncation persists at batch size 1, compile fails with an actionable error and does not write partial article files.
 
+Run logging:
+
+- `lore ingest`, `lore compile`, and `lore query` now emit structured run logs to `.lore/logs/<runId>.jsonl`.
+- Commands print run start/end summaries with run ID and log path to stderr.
+- JSON command output includes `runId` and `logPath`.
+- Query/compile token events are logged with raw token text in JSONL logs.
+- Logs are rotated automatically; default retention is 200 log files.
+- Use `LORE_LOG_MAX_FILES` to override retention count.
+
 Security model:
 
 - Secrets are stored in OS secure storage (Keychain on macOS, platform equivalent on Linux/Windows) when available.
@@ -142,6 +156,7 @@ Environment variables (highest precedence at runtime):
 - `LORE_CF_ACCOUNT_ID`
 - `LORE_CF_TOKEN`
 - `LORE_DISABLE_KEYTAR`
+- `LORE_LOG_MAX_FILES`
 
 ## Learn More
 

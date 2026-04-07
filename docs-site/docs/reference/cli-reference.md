@@ -54,6 +54,13 @@ Notes:
 - `lore settings unset maxTokens --scope repo` removes the explicit token cap.
 - When `maxTokens` is unset, Lore omits `max_tokens` in LLM requests.
 
+## Run Logs
+
+- `lore ingest`, `lore compile`, and `lore query` create JSONL logs in `.lore/logs/<runId>.jsonl`.
+- Human mode prints run start/end summaries (including `runId` and log path) to stderr.
+- JSON mode includes `runId` and `logPath` in command output.
+- Logs are rotated automatically; configure retention with `LORE_LOG_MAX_FILES`.
+
 ## Exit Codes
 
 - `0` -- success

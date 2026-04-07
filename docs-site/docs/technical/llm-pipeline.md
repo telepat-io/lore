@@ -28,3 +28,9 @@ On retryable failure, compile automatically retries with smaller batch sizes unt
 - `maxTokens` is optional in `.lore/config.json`.
 - If set, Lore includes `max_tokens` in OpenRouter requests.
 - If unset, Lore omits `max_tokens` and uses provider/model defaults.
+
+## Run Logging
+
+- Compile and query runs emit structured JSONL events in `.lore/logs/<runId>.jsonl`.
+- Token stream events are logged with raw token text.
+- Command stderr shows concise run start/end summaries with run ID and log path.

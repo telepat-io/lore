@@ -4,9 +4,11 @@ import { requireRepo } from './repo.js';
 import { openDb } from './db.js';
 import { streamChat, type LlmMessage } from './llm.js';
 import { buildSafeFtsQuery } from '../utils/fts.js';
+import { type RunLogger } from './logger.js';
 
 export interface QueryOptions {
   fileBack?: boolean;
+  logger?: RunLogger;
 }
 
 export interface QueryResult {
@@ -22,21 +24,27 @@ export interface ExplainResult {
 
 /** BFS/DFS traversal of backlinks graph + LLM Q&A */
 export async function query(cwd: string, question: string, opts: QueryOptions = {}): Promise<QueryResult> {
+  opts.logger?.stepStart('query.init', { question });
   const root = await requireRepo(cwd);
   const fileBack = opts.fileBack !== false; // default true
 
   // Load index.md as initial context (always consulted first)
   let indexContent = '';
+  opts.logger?.stepStart('query.load-index');
   try {
     indexContent = await fs.readFile(path.join(root, '.lore', 'wiki', 'index.md'), 'utf-8');
   } catch { /* no index yet */ }
+  opts.logger?.stepEnd('query.load-index', { hasIndex: !!indexContent });
 
   // FTS5 search to find top-N most relevant article slugs
   const db = openDb(root);
   let relevantSlugs: string[] = [];
   try {
+    opts.logger?.stepStart('query.fts-search');
     const ftsQuery = buildSafeFtsQuery(question);
     if (!ftsQuery) {
+      opts.logger?.stepEnd('query.fts-search', { emptyQuery: true });
+      opts.logger?.stepEnd('query.init', { answered: false });
       return { answer: 'Please provide a question with searchable words.', sources: [] };
     }
 
@@ -44,9 +52,11 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
       SELECT slug FROM fts WHERE fts MATCH ? ORDER BY rank LIMIT 5
     `).all(ftsQuery) as { slug: string }[];
     relevantSlugs = rows.map(r => r.slug);
+    opts.logger?.stepEnd('query.fts-search', { ftsResults: relevantSlugs.length });
 
     // BFS from those slugs over links table to gather 1-hop neighbors
     if (relevantSlugs.length > 0) {
+      opts.logger?.stepStart('query.bfs-neighbors', { initialCount: relevantSlugs.length });
       const placeholders = relevantSlugs.map(() => '?').join(',');
       const neighbors = db.prepare(`
         SELECT DISTINCT to_slug FROM links WHERE from_slug IN (${placeholders})
@@ -62,6 +72,7 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
       }
       // Cap at 10 articles for context
       relevantSlugs = relevantSlugs.slice(0, 10);
+      opts.logger?.stepEnd('query.bfs-neighbors', { finalCount: relevantSlugs.length });
     }
   } finally {
     db.close();
@@ -71,6 +82,7 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
   const articlesDir = path.join(root, '.lore', 'wiki', 'articles');
   const contextParts: string[] = [];
   const sources: string[] = [];
+  opts.logger?.stepStart('query.load-context', { candidateSlugs: relevantSlugs.length });
 
   for (const slug of relevantSlugs) {
     try {
@@ -79,6 +91,7 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
       sources.push(slug);
     } catch { /* article not found */ }
   }
+  opts.logger?.stepEnd('query.load-context', { loadedSources: sources.length });
 
   const context = [
     indexContent ? `=== INDEX ===\n${indexContent}` : '',
@@ -96,10 +109,21 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
     },
   ];
 
-  const result = await streamChat(cwd, { messages });
+  opts.logger?.stepStart('query.llm', { contextChars: context.length });
+  const result = await streamChat(cwd, {
+    messages,
+    onToken: (token) => {
+      opts.logger?.token('query.llm.token', token);
+    },
+  });
+  opts.logger?.stepEnd('query.llm', {
+    tokensUsed: result.tokensUsed,
+    finishReason: result.finishReason,
+  });
 
   let filedBackPath: string | undefined;
   if (fileBack) {
+    opts.logger?.stepStart('query.file-back');
     const qaDir = path.join(root, '.lore', 'wiki', 'derived', 'qa');
     await fs.mkdir(qaDir, { recursive: true });
     const slug = slugify(question).slice(0, 60);
@@ -116,7 +140,10 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
       result.content,
     ].join('\n');
     await fs.writeFile(filedBackPath, qaContent);
+    opts.logger?.stepEnd('query.file-back', { filedBackPath });
   }
+
+  opts.logger?.stepEnd('query.init', { sources: sources.length, filedBack: !!filedBackPath });
 
   return { answer: result.content, sources, filedBackPath };
 }

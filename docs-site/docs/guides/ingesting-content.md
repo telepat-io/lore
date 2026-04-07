@@ -37,6 +37,12 @@ All ingested content is stored in `.lore/raw/<sha256>/` with `extracted.md` and 
 4. Transcript output is stored in the same raw pipeline (`extracted.md` + `meta.json`).
 5. If `yt-dlp` is unavailable or subtitles are missing, Lore falls back to URL fetch ingestion.
 
+Extractor provenance:
+
+- `meta.json` for video ingests includes an `extractor` field.
+- `extractor: yt-dlp` indicates subtitle extraction succeeded.
+- Fallback values include `url-fallback-no-ytdlp`, `url-fallback-no-subs`, and `url-fallback-empty-transcript`.
+
 ## Related References
 
 - Supported formats: `/reference/supported-formats`

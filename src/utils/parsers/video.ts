@@ -4,6 +4,17 @@ import os from 'os';
 import path from 'path';
 import { parseUrl } from './url.js';
 
+export type VideoExtractor =
+  | 'yt-dlp'
+  | 'url-fallback-no-ytdlp'
+  | 'url-fallback-no-subs'
+  | 'url-fallback-empty-transcript';
+
+export interface VideoParseResult {
+  markdown: string;
+  extractor: VideoExtractor;
+}
+
 const VIDEO_HOSTS = [
   'youtube.com', 'youtu.be', 'vimeo.com', 'twitch.tv',
   'dailymotion.com', 'rumble.com', 'bitchute.com',
@@ -20,14 +31,17 @@ export function isVideoUrl(url: string): boolean {
 }
 
 /** Parse video URLs via yt-dlp → VTT → clean transcript */
-export async function parseVideo(url: string): Promise<string> {
+export async function parseVideo(url: string): Promise<VideoParseResult> {
   // Check if yt-dlp is available
   try {
     await execa('yt-dlp', ['--version']);
   } catch {
     // yt-dlp not found, fall back to Jina
     process.stderr.write('yt-dlp not found. Install: brew install yt-dlp. Falling back to URL fetch.\n');
-    return parseUrl(url);
+    return {
+      markdown: await parseUrl(url),
+      extractor: 'url-fallback-no-ytdlp',
+    };
   }
 
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'lore-video-'));
@@ -46,17 +60,27 @@ export async function parseVideo(url: string): Promise<string> {
     const vttFile = files.find(f => f.endsWith('.vtt'));
     if (!vttFile) {
       process.stderr.write('No subtitles found. Falling back to URL fetch.\n');
-      return parseUrl(url);
+      return {
+        markdown: await parseUrl(url),
+        extractor: 'url-fallback-no-subs',
+      };
     }
 
     const vtt = await fs.readFile(path.join(tmpDir, vttFile), 'utf-8');
     const transcript = cleanVtt(vtt);
 
     if (!transcript) {
-      return parseUrl(url);
+      process.stderr.write('Subtitles were empty after cleaning. Falling back to URL fetch.\n');
+      return {
+        markdown: await parseUrl(url),
+        extractor: 'url-fallback-empty-transcript',
+      };
     }
 
-    return `# Video Transcript\n\nSource: ${url}\n\n${transcript}`;
+    return {
+      markdown: `# Video Transcript\n\nSource: ${url}\n\n${transcript}`,
+      extractor: 'yt-dlp',
+    };
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }

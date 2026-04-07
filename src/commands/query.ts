@@ -1,12 +1,24 @@
 import type { OptionValues } from 'commander';
 import { query } from '../core/query.js';
+import { RunLogger } from '../core/logger.js';
 
 export async function queryCommand(question: string, opts: OptionValues): Promise<void> {
-  // TODO: BFS/DFS traversal of backlinks graph + LLM Q&A, optionally file back
-  const result = await query(process.cwd(), question, { fileBack: opts['fileBack'] !== false });
-  if (opts['json']) {
-    process.stdout.write(JSON.stringify(result) + '\n');
-  } else {
-    process.stdout.write(result.answer + '\n');
+  const logger = await RunLogger.create(process.cwd(), 'query');
+  try {
+    const result = await query(process.cwd(), question, {
+      fileBack: opts['fileBack'] !== false,
+      logger,
+    });
+    await logger.close('ok', { sources: result.sources.length, filedBack: !!result.filedBackPath });
+
+    if (opts['json']) {
+      process.stdout.write(JSON.stringify({ ...result, runId: logger.runId, logPath: logger.logPath }) + '\n');
+    } else {
+      process.stdout.write(result.answer + '\n');
+    }
+  } catch (error) {
+    logger.error('query.command', error);
+    await logger.close('error');
+    throw error;
   }
 }
