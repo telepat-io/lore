@@ -121,6 +121,8 @@ MCP utility additions:
 
 - `check_duplicate(content?, sha256?)` verifies whether content is already stored in `.lore/raw/`.
 - `list_raw_tags()` returns format distribution and top inferred metadata tags from raw ingests.
+- `rebuild_index(repair?)` rebuilds FTS/backlinks from MCP clients (with optional manifest repair).
+- `list_orphans()` returns articles with no incoming links.
 
 ## Settings and Secrets
 

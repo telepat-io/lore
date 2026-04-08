@@ -10,6 +10,7 @@ import { query } from './query.js';
 import { lintWiki } from './lint.js';
 import { openDb } from './db.js';
 import { hashContent } from '../utils/hash.js';
+import { rebuildIndex } from './index.js';
 
 /** Start MCP server on stdio transport */
 export async function startMcpServer(cwd: string): Promise<void> {
@@ -77,6 +78,21 @@ export async function startMcpServer(cwd: string): Promise<void> {
       {
         name: 'list_raw_tags',
         description: 'Summarize inferred raw metadata tags and formats from .lore/raw/meta.json',
+        inputSchema: { type: 'object' as const, properties: {} },
+      },
+      {
+        name: 'rebuild_index',
+        description: 'Rebuild the search index and backlinks graph (optional manifest repair)',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            repair: { type: 'boolean', description: 'Repair missing manifest entries before rebuild' },
+          },
+        },
+      },
+      {
+        name: 'list_orphans',
+        description: 'List wiki articles with no incoming links',
         inputSchema: { type: 'object' as const, properties: {} },
       },
     ],
@@ -160,37 +176,12 @@ export async function startMcpServer(cwd: string): Promise<void> {
           content: z.string().min(1).optional(),
           sha256: z.string().regex(/^[a-f0-9]{64}$/i).optional(),
         }).parse((args ?? {}) as Record<string, unknown>);
-
-        if (!payload.content && !payload.sha256) {
-          throw new Error('check_duplicate requires either content or sha256');
-        }
-
-        const sha256 = payload.sha256?.toLowerCase() ?? hashContent(payload.content ?? '');
-        const rawDir = path.join(root, '.lore', 'raw', sha256);
-        const extractedPath = path.join(rawDir, 'extracted.md');
-        const metaPath = path.join(rawDir, 'meta.json');
-
-        let duplicate = false;
-        let meta: Record<string, unknown> | null = null;
-        try {
-          await fs.access(extractedPath);
-          const metaRaw = await fs.readFile(metaPath, 'utf-8');
-          meta = JSON.parse(metaRaw) as Record<string, unknown>;
-          duplicate = true;
-        } catch {
-          duplicate = false;
-        }
+        const duplicateResult = await checkDuplicateInRaw(root, payload);
 
         return {
           content: [{
             type: 'text' as const,
-            text: JSON.stringify({
-              duplicate,
-              sha256,
-              ...(duplicate ? { rawPath: rawDir } : {}),
-              ...(meta && typeof meta['title'] === 'string' ? { title: meta['title'] } : {}),
-              ...(meta && typeof meta['format'] === 'string' ? { format: meta['format'] } : {}),
-            }, null, 2),
+            text: JSON.stringify(duplicateResult, null, 2),
           }],
         };
       }
@@ -198,6 +189,28 @@ export async function startMcpServer(cwd: string): Promise<void> {
       case 'list_raw_tags': {
         const summary = await summarizeRawMetadata(root);
         return { content: [{ type: 'text' as const, text: JSON.stringify(summary, null, 2) }] };
+      }
+
+      case 'rebuild_index': {
+        const payload = z.object({
+          repair: z.boolean().optional(),
+        }).parse((args ?? {}) as Record<string, unknown>);
+
+        const result = await rebuildIndex(cwd, { repair: payload.repair === true });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      }
+
+      case 'list_orphans': {
+        const lint = await lintWiki(cwd);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              count: lint.orphans.length,
+              orphans: lint.orphans,
+            }, null, 2),
+          }],
+        };
       }
 
       default:
@@ -214,7 +227,46 @@ interface RawMeta {
   tags?: unknown;
 }
 
-async function summarizeRawMetadata(root: string): Promise<{
+interface CheckDuplicateInput {
+  content?: string;
+  sha256?: string;
+}
+
+interface CheckDuplicateResult {
+  duplicate: boolean;
+  sha256: string;
+  rawPath?: string;
+  title?: string;
+  format?: string;
+}
+
+export async function checkDuplicateInRaw(root: string, input: CheckDuplicateInput): Promise<CheckDuplicateResult> {
+  if (!input.content && !input.sha256) {
+    throw new Error('check_duplicate requires either content or sha256');
+  }
+
+  const sha256 = input.sha256?.toLowerCase() ?? hashContent(input.content ?? '');
+  const rawDir = path.join(root, '.lore', 'raw', sha256);
+  const extractedPath = path.join(rawDir, 'extracted.md');
+  const metaPath = path.join(rawDir, 'meta.json');
+
+  try {
+    await fs.access(extractedPath);
+    const metaRaw = await fs.readFile(metaPath, 'utf-8');
+    const meta = JSON.parse(metaRaw) as Record<string, unknown>;
+    return {
+      duplicate: true,
+      sha256,
+      rawPath: rawDir,
+      ...(typeof meta['title'] === 'string' ? { title: meta['title'] } : {}),
+      ...(typeof meta['format'] === 'string' ? { format: meta['format'] } : {}),
+    };
+  } catch {
+    return { duplicate: false, sha256 };
+  }
+}
+
+export async function summarizeRawMetadata(root: string): Promise<{
   entries: number;
   byFormat: Record<string, number>;
   topTags: Array<{ tag: string; count: number }>;

@@ -24,6 +24,8 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 | `lint_summary()` | Orphans, gaps, suggestions |
 | `check_duplicate(content?, sha256?)` | Duplicate precheck against `.lore/raw/<sha>` |
 | `list_raw_tags()` | Raw metadata taxonomy summary (formats + top tags) |
+| `rebuild_index(repair?)` | Rebuild search index/backlinks (optional manifest repair) |
+| `list_orphans()` | List articles with no incoming links |
 
 ## New Utility Tools
 
@@ -32,3 +34,5 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 	- total entry count
 	- per-format counts
 	- top inferred tags by frequency
+- `rebuild_index` runs Lore's index rebuild through MCP; pass `repair: true` to recover missing manifest entries first.
+- `list_orphans` returns a focused orphan-only view from lint diagnostics for graph maintenance workflows.
