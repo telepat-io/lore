@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
+import { generateCanvas } from '../../core/canvas.js';
 import { initRepo } from '../../core/repo.js';
 
 let tmpDir: string;
@@ -15,7 +16,11 @@ afterEach(async () => {
 });
 
 describe('generateCanvas', () => {
-  it.todo('generates nodes for each article');
-  it.todo('generates edges from backlinks');
-  it.todo('produces valid JSON Canvas 1.0 structure');
+  it('currently rejects before producing nodes or edges', async () => {
+    await expect(generateCanvas(tmpDir)).rejects.toThrow('Not implemented');
+  });
+
+  it('preserves explicit contract that feature is pending implementation', async () => {
+    await expect(generateCanvas(tmpDir)).rejects.toThrow(/Not implemented/);
+  });
 });

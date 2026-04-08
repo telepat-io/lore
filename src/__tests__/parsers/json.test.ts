@@ -73,4 +73,60 @@ describe('parseJson', () => {
     expect(md).toContain('> What changed?');
     expect(md).toContain('Ingest now supports transcript normalization.');
   });
+
+  it('normalizes Claude-style JSONL messages', () => {
+    const lines = [
+      JSON.stringify({ type: 'human', message: { content: 'Can this normalize?' } }),
+      JSON.stringify({ type: 'assistant', message: { content: 'Yes, it can.' } }),
+    ];
+
+    const md = parseJson(lines.join('\n'));
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> Can this normalize?');
+    expect(md).toContain('Yes, it can.');
+  });
+
+  it('normalizes Slack-style exports', () => {
+    const input = JSON.stringify([
+      { type: 'message', user: 'U1', text: 'Morning sync?' },
+      { type: 'message', user: 'U2', text: 'All green.' },
+    ]);
+
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> Morning sync?');
+    expect(md).toContain('All green.');
+  });
+
+  it('falls back to generic JSON markdown when not conversation-shaped', () => {
+    const md = parseJson(JSON.stringify({ build: { status: 'ok' } }));
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('build');
+    expect(md).toContain('status');
+  });
+
+  it('keeps assistant-first messages in transcript formatting', () => {
+    const input = JSON.stringify([
+      { role: 'assistant', content: 'System note first.' },
+      { role: 'user', content: 'Understood.' },
+      { role: 'assistant', content: 'Proceeding.' },
+    ]);
+
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('System note first.');
+    expect(md).toContain('> Understood.');
+    expect(md).toContain('Proceeding.');
+  });
+
+  it('falls back for user-only message arrays', () => {
+    const input = JSON.stringify([
+      { role: 'user', content: 'Only one side here.' },
+      { role: 'user', content: 'Still only user.' },
+    ]);
+
+    const md = parseJson(input);
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('role');
+  });
 });
