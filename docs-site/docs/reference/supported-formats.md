@@ -11,7 +11,7 @@ sidebar_position: 2
 | `.md` | Direct | None |
 | `.txt` | Direct | None |
 | `.html` | rehype-parse | None |
-| `.json` / `.jsonl` | JSON parser | None |
+| `.json` / `.jsonl` | JSON parser (auto-normalizes supported conversation exports to transcript markdown) | None |
 | `.pdf` | Replicate marker | Replicate API key |
 | `.docx` / `.pptx` / `.xlsx` / `.epub` | Replicate marker | Replicate API key |
 | Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`) | Replicate vision | Replicate API key |

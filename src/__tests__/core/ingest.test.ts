@@ -74,6 +74,28 @@ describe('ingest', () => {
     expect(result.format).toBe('json');
   });
 
+  it('normalizes conversation export JSON during ingest', async () => {
+    const jsonFile = path.join(tmpDir, 'chat-export.json');
+    await fs.writeFile(
+      jsonFile,
+      JSON.stringify([
+        { role: 'user', content: 'How should we ingest this?' },
+        { role: 'assistant', content: 'Lore will normalize this into transcript markdown.' },
+      ])
+    );
+
+    const result = await ingest(tmpDir, jsonFile);
+    expect(result.format).toBe('json');
+    expect(result.title).toBe('Conversation Transcript');
+
+    const extracted = await fs.readFile(
+      path.join(tmpDir, '.lore', 'raw', result.sha256, 'extracted.md'),
+      'utf-8'
+    );
+    expect(extracted).toContain('> How should we ingest this?');
+    expect(extracted).toContain('Lore will normalize this into transcript markdown.');
+  });
+
   it('ingests an HTML file', async () => {
     const htmlFile = path.join(tmpDir, 'page.html');
     await fs.writeFile(htmlFile, '<html><body><h1>Web Page</h1><p>Content here.</p></body></html>');

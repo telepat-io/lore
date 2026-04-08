@@ -14,13 +14,22 @@ lore ingest <path|url>
 |---|---|
 | `.md`, `.txt` | Direct |
 | `.html` | rehype-parse |
-| `.json`, `.jsonl` | JSON parser |
+| `.json`, `.jsonl` | JSON parser (auto-normalizes supported chat exports) |
 | `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub` | Replicate marker |
 | Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`) | Replicate vision |
 | URLs | Jina r.jina.ai or Cloudflare BR |
 | Video URLs | yt-dlp subtitles |
 
 All ingested content is stored in `.lore/raw/<sha256>/` with `extracted.md` and `meta.json`.
+
+## How Conversation Export Ingestion Works (`.json` / `.jsonl`)
+
+1. Lore first attempts to detect known conversation schemas.
+2. When a supported schema is detected, Lore rewrites the content into transcript markdown:
+	- user turns are prefixed with `>`
+	- assistant turns are preserved as response blocks
+3. Current auto-detection targets common exports such as role/content arrays, ChatGPT mapping exports, and Codex/Claude-style JSONL logs.
+4. If no known schema is detected, Lore falls back to generic JSON-to-markdown conversion.
 
 ## How PDF Ingestion Works
 

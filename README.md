@@ -27,6 +27,7 @@ Inspired by Andrej Karpathy's note on agent memory and continuity: https://x.com
 Lore supports a mixed ingestion pipeline, including PDFs and video URLs.
 
 - PDF and office docs (`.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub`): parsed via Replicate marker
+- Conversation exports (`.json`, `.jsonl`): auto-detected and normalized to transcript markdown when supported schemas are found (for example role/content arrays, ChatGPT mapping exports, Codex/Claude-style JSONL)
 - YouTube/video URLs: parsed via `yt-dlp` subtitles (with URL fetch fallback if unavailable)
 - URLs: fetched through Jina (`r.jina.ai`) or Cloudflare Browser Rendering
 - Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`): parsed via Replicate vision model
