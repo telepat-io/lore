@@ -123,6 +123,8 @@ MCP utility additions:
 - `list_raw_tags()` returns format distribution and top inferred metadata tags from raw ingests.
 - `rebuild_index(repair?)` rebuilds FTS/backlinks from MCP clients (with optional manifest repair).
 - `list_orphans()` returns articles with no incoming links.
+- `list_gaps()` returns missing conceptual targets referenced by links.
+- `list_ambiguous()` returns articles marked with ambiguous confidence.
 
 ## Settings and Secrets
 

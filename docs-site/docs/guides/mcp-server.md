@@ -26,6 +26,8 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 | `list_raw_tags()` | Raw metadata taxonomy summary (formats + top tags) |
 | `rebuild_index(repair?)` | Rebuild search index/backlinks (optional manifest repair) |
 | `list_orphans()` | List articles with no incoming links |
+| `list_gaps()` | List missing conceptual targets referenced by links |
+| `list_ambiguous()` | List articles marked `confidence: ambiguous` |
 
 ## New Utility Tools
 
@@ -36,3 +38,5 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 	- top inferred tags by frequency
 - `rebuild_index` runs Lore's index rebuild through MCP; pass `repair: true` to recover missing manifest entries first.
 - `list_orphans` returns a focused orphan-only view from lint diagnostics for graph maintenance workflows.
+- `list_gaps` returns unresolved conceptual targets so agents can prioritize article creation.
+- `list_ambiguous` returns uncertain articles for review and clarification workflows.

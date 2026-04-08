@@ -12,6 +12,100 @@ import { openDb } from './db.js';
 import { hashContent } from '../utils/hash.js';
 import { rebuildIndex } from './index.js';
 
+interface MpcToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: {
+    type: 'object';
+    properties: Record<string, { type: string; description?: string }>;
+    required?: string[];
+  };
+}
+
+export const MCP_TOOLS: MpcToolDefinition[] = [
+  {
+    name: 'search',
+    description: 'Full-text search the wiki (BM25 ranked)',
+    inputSchema: { type: 'object', properties: { query: { type: 'string', description: 'Search query' } }, required: ['query'] },
+  },
+  {
+    name: 'ask',
+    description: 'Answer a question using the wiki knowledge base',
+    inputSchema: { type: 'object', properties: { question: { type: 'string', description: 'Question to answer' } }, required: ['question'] },
+  },
+  {
+    name: 'list_articles',
+    description: 'List all wiki articles with titles',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_article',
+    description: 'Get the full content of a wiki article by slug',
+    inputSchema: { type: 'object', properties: { slug: { type: 'string', description: 'Article slug' } }, required: ['slug'] },
+  },
+  {
+    name: 'get_neighbors',
+    description: 'Get articles linked to/from the given article',
+    inputSchema: { type: 'object', properties: { slug: { type: 'string', description: 'Article slug' } }, required: ['slug'] },
+  },
+  {
+    name: 'path',
+    description: 'Find shortest conceptual path between two articles',
+    inputSchema: { type: 'object', properties: { from: { type: 'string' }, to: { type: 'string' } }, required: ['from', 'to'] },
+  },
+  {
+    name: 'graph_stats',
+    description: 'Get wiki graph statistics',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'lint_summary',
+    description: 'Get wiki health check results',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'check_duplicate',
+    description: 'Check whether content or sha256 is already present in .lore/raw',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'Raw content to hash and check' },
+        sha256: { type: 'string', description: 'Known SHA-256 hash to check directly' },
+      },
+    },
+  },
+  {
+    name: 'list_raw_tags',
+    description: 'Summarize inferred raw metadata tags and formats from .lore/raw/meta.json',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'rebuild_index',
+    description: 'Rebuild the search index and backlinks graph (optional manifest repair)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        repair: { type: 'boolean', description: 'Repair missing manifest entries before rebuild' },
+      },
+    },
+  },
+  {
+    name: 'list_orphans',
+    description: 'List wiki articles with no incoming links',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'list_gaps',
+    description: 'List missing link targets that do not yet have an article',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'list_ambiguous',
+    description: 'List articles marked with ambiguous confidence',
+    inputSchema: { type: 'object', properties: {} },
+  },
+];
+
 /** Start MCP server on stdio transport */
 export async function startMcpServer(cwd: string): Promise<void> {
   const root = await requireRepo(cwd);
@@ -23,79 +117,7 @@ export async function startMcpServer(cwd: string): Promise<void> {
 
   // List tools
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [
-      {
-        name: 'search',
-        description: 'Full-text search the wiki (BM25 ranked)',
-        inputSchema: { type: 'object' as const, properties: { query: { type: 'string', description: 'Search query' } }, required: ['query'] },
-      },
-      {
-        name: 'ask',
-        description: 'Answer a question using the wiki knowledge base',
-        inputSchema: { type: 'object' as const, properties: { question: { type: 'string', description: 'Question to answer' } }, required: ['question'] },
-      },
-      {
-        name: 'list_articles',
-        description: 'List all wiki articles with titles',
-        inputSchema: { type: 'object' as const, properties: {} },
-      },
-      {
-        name: 'get_article',
-        description: 'Get the full content of a wiki article by slug',
-        inputSchema: { type: 'object' as const, properties: { slug: { type: 'string', description: 'Article slug' } }, required: ['slug'] },
-      },
-      {
-        name: 'get_neighbors',
-        description: 'Get articles linked to/from the given article',
-        inputSchema: { type: 'object' as const, properties: { slug: { type: 'string', description: 'Article slug' } }, required: ['slug'] },
-      },
-      {
-        name: 'path',
-        description: 'Find shortest conceptual path between two articles',
-        inputSchema: { type: 'object' as const, properties: { from: { type: 'string' }, to: { type: 'string' } }, required: ['from', 'to'] },
-      },
-      {
-        name: 'graph_stats',
-        description: 'Get wiki graph statistics',
-        inputSchema: { type: 'object' as const, properties: {} },
-      },
-      {
-        name: 'lint_summary',
-        description: 'Get wiki health check results',
-        inputSchema: { type: 'object' as const, properties: {} },
-      },
-      {
-        name: 'check_duplicate',
-        description: 'Check whether content or sha256 is already present in .lore/raw',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            content: { type: 'string', description: 'Raw content to hash and check' },
-            sha256: { type: 'string', description: 'Known SHA-256 hash to check directly' },
-          },
-        },
-      },
-      {
-        name: 'list_raw_tags',
-        description: 'Summarize inferred raw metadata tags and formats from .lore/raw/meta.json',
-        inputSchema: { type: 'object' as const, properties: {} },
-      },
-      {
-        name: 'rebuild_index',
-        description: 'Rebuild the search index and backlinks graph (optional manifest repair)',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            repair: { type: 'boolean', description: 'Repair missing manifest entries before rebuild' },
-          },
-        },
-      },
-      {
-        name: 'list_orphans',
-        description: 'List wiki articles with no incoming links',
-        inputSchema: { type: 'object' as const, properties: {} },
-      },
-    ],
+    tools: MCP_TOOLS,
   }));
 
   // Handle tool calls
@@ -208,6 +230,32 @@ export async function startMcpServer(cwd: string): Promise<void> {
             text: JSON.stringify({
               count: lint.orphans.length,
               orphans: lint.orphans,
+            }, null, 2),
+          }],
+        };
+      }
+
+      case 'list_gaps': {
+        const lint = await lintWiki(cwd);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              count: lint.gaps.length,
+              gaps: lint.gaps,
+            }, null, 2),
+          }],
+        };
+      }
+
+      case 'list_ambiguous': {
+        const lint = await lintWiki(cwd);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              count: lint.ambiguous.length,
+              ambiguous: lint.ambiguous,
             }, null, 2),
           }],
         };

@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { checkDuplicateInRaw, summarizeRawMetadata } from '../../core/mcp.js';
+import { checkDuplicateInRaw, summarizeRawMetadata, MCP_TOOLS } from '../../core/mcp.js';
 import { hashContent } from '../../utils/hash.js';
 import { initRepo } from '../../core/repo.js';
 
@@ -78,5 +78,28 @@ describe('summarizeRawMetadata', () => {
         { tag: 'decision', count: 1 },
       ])
     );
+  });
+});
+
+describe('MCP_TOOLS', () => {
+  it('contains expected maintenance and lint tool names', () => {
+    const names = MCP_TOOLS.map((tool) => tool.name);
+
+    expect(names).toEqual(expect.arrayContaining([
+      'check_duplicate',
+      'list_raw_tags',
+      'rebuild_index',
+      'list_orphans',
+      'list_gaps',
+      'list_ambiguous',
+    ]));
+  });
+
+  it('defines object input schemas for all tools', () => {
+    for (const tool of MCP_TOOLS) {
+      expect(tool.inputSchema.type).toBe('object');
+      expect(typeof tool.description).toBe('string');
+      expect(tool.description.length).toBeGreaterThan(0);
+    }
   });
 });
