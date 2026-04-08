@@ -15,10 +15,12 @@ FTS5/BM25 full-text search with ranked snippets.
 ## Query
 
 ```bash
-lore query "question" [--no-file-back] [--json]
+lore query "question" [--no-file-back] [--normalize-question] [--json]
 ```
 
 BFS/DFS traversal of the backlinks graph + LLM Q&A. Answers can be filed back to `derived/qa/`.
+
+`--normalize-question` enables conservative typo cleanup before retrieval while preserving technical tokens (for example paths, IDs, env vars, versioned terms).
 
 ## Path
 

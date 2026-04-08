@@ -9,6 +9,7 @@ import { search, findPath } from './search.js';
 import { query } from './query.js';
 import { lintWiki } from './lint.js';
 import { openDb } from './db.js';
+import { hashContent } from '../utils/hash.js';
 
 /** Start MCP server on stdio transport */
 export async function startMcpServer(cwd: string): Promise<void> {
@@ -60,6 +61,22 @@ export async function startMcpServer(cwd: string): Promise<void> {
       {
         name: 'lint_summary',
         description: 'Get wiki health check results',
+        inputSchema: { type: 'object' as const, properties: {} },
+      },
+      {
+        name: 'check_duplicate',
+        description: 'Check whether content or sha256 is already present in .lore/raw',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            content: { type: 'string', description: 'Raw content to hash and check' },
+            sha256: { type: 'string', description: 'Known SHA-256 hash to check directly' },
+          },
+        },
+      },
+      {
+        name: 'list_raw_tags',
+        description: 'Summarize inferred raw metadata tags and formats from .lore/raw/meta.json',
         inputSchema: { type: 'object' as const, properties: {} },
       },
     ],
@@ -138,6 +155,51 @@ export async function startMcpServer(cwd: string): Promise<void> {
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       }
 
+      case 'check_duplicate': {
+        const payload = z.object({
+          content: z.string().min(1).optional(),
+          sha256: z.string().regex(/^[a-f0-9]{64}$/i).optional(),
+        }).parse((args ?? {}) as Record<string, unknown>);
+
+        if (!payload.content && !payload.sha256) {
+          throw new Error('check_duplicate requires either content or sha256');
+        }
+
+        const sha256 = payload.sha256?.toLowerCase() ?? hashContent(payload.content ?? '');
+        const rawDir = path.join(root, '.lore', 'raw', sha256);
+        const extractedPath = path.join(rawDir, 'extracted.md');
+        const metaPath = path.join(rawDir, 'meta.json');
+
+        let duplicate = false;
+        let meta: Record<string, unknown> | null = null;
+        try {
+          await fs.access(extractedPath);
+          const metaRaw = await fs.readFile(metaPath, 'utf-8');
+          meta = JSON.parse(metaRaw) as Record<string, unknown>;
+          duplicate = true;
+        } catch {
+          duplicate = false;
+        }
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              duplicate,
+              sha256,
+              ...(duplicate ? { rawPath: rawDir } : {}),
+              ...(meta && typeof meta['title'] === 'string' ? { title: meta['title'] } : {}),
+              ...(meta && typeof meta['format'] === 'string' ? { format: meta['format'] } : {}),
+            }, null, 2),
+          }],
+        };
+      }
+
+      case 'list_raw_tags': {
+        const summary = await summarizeRawMetadata(root);
+        return { content: [{ type: 'text' as const, text: JSON.stringify(summary, null, 2) }] };
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -145,4 +207,63 @@ export async function startMcpServer(cwd: string): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+}
+
+interface RawMeta {
+  format?: string;
+  tags?: unknown;
+}
+
+async function summarizeRawMetadata(root: string): Promise<{
+  entries: number;
+  byFormat: Record<string, number>;
+  topTags: Array<{ tag: string; count: number }>;
+}> {
+  const rawRoot = path.join(root, '.lore', 'raw');
+  let dirs: string[] = [];
+  try {
+    dirs = await fs.readdir(rawRoot);
+  } catch {
+    dirs = [];
+  }
+
+  const byFormat = new Map<string, number>();
+  const tagCounts = new Map<string, number>();
+
+  for (const dir of dirs) {
+    const metaPath = path.join(rawRoot, dir, 'meta.json');
+    try {
+      const metaRaw = await fs.readFile(metaPath, 'utf-8');
+      const meta = JSON.parse(metaRaw) as RawMeta;
+
+      const format = typeof meta.format === 'string' && meta.format.length > 0 ? meta.format : 'unknown';
+      byFormat.set(format, (byFormat.get(format) ?? 0) + 1);
+
+      if (Array.isArray(meta.tags)) {
+        for (const rawTag of meta.tags) {
+          if (typeof rawTag !== 'string') {
+            continue;
+          }
+          const tag = rawTag.trim();
+          if (!tag) {
+            continue;
+          }
+          tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+        }
+      }
+    } catch {
+      // Skip malformed or missing metadata files.
+    }
+  }
+
+  const topTags = [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 25)
+    .map(([tag, count]) => ({ tag, count }));
+
+  return {
+    entries: dirs.length,
+    byFormat: Object.fromEntries([...byFormat.entries()].sort((a, b) => a[0].localeCompare(b[0]))),
+    topTags,
+  };
 }

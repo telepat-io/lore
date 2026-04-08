@@ -15,7 +15,7 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 | `lore ingest <path\|url>` | Ingest file or URL into `raw/` |
 | `lore compile [--force]` | Compile raw sources into wiki articles |
 | `lore index [--repair]` | Rebuild FTS5 index + `index.md` (optional manifest repair from `raw/`) |
-| `lore query "<q>" [--no-file-back]` | BFS/DFS + LLM Q&A |
+| `lore query "<q>" [--no-file-back] [--normalize-question]` | BFS/DFS + LLM Q&A |
 | `lore search "<term>" [--limit N]` | FTS5/BM25 search |
 | `lore path "<A>" "<B>"` | Shortest path between articles |
 | `lore explain "<concept>"` | Deep-dive on a concept |

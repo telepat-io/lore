@@ -62,6 +62,7 @@ program
   .command('query <question>')
   .description('Answer a question from the wiki via BFS/DFS + LLM')
   .option('--no-file-back', 'Do not file the answer back into derived/qa/')
+  .option('--normalize-question', 'Apply conservative query text cleanup before retrieval')
   .option('--json', 'Output JSON')
   .action(queryCommand);
 

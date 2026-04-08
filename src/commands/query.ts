@@ -5,8 +5,12 @@ import { RunLogger } from '../core/logger.js';
 export async function queryCommand(question: string, opts: OptionValues): Promise<void> {
   const logger = await RunLogger.create(process.cwd(), 'query');
   try {
+    const normalizeQuestion = opts['normalizeQuestion'] === true
+      || process.env['LORE_QUERY_NORMALIZE'] === 'true';
+
     const result = await query(process.cwd(), question, {
       fileBack: opts['fileBack'] !== false,
+      normalizeQuestion,
       logger,
     });
     await logger.close('ok', { sources: result.sources.length, filedBack: !!result.filedBackPath });

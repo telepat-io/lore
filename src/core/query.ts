@@ -5,10 +5,12 @@ import { openDb } from './db.js';
 import { streamChat, type LlmMessage } from './llm.js';
 import { buildSafeFtsQuery } from '../utils/fts.js';
 import { type RunLogger } from './logger.js';
+import { normalizeQueryText } from '../utils/queryText.js';
 
 export interface QueryOptions {
   fileBack?: boolean;
   logger?: RunLogger;
+  normalizeQuestion?: boolean;
 }
 
 export interface QueryResult {
@@ -24,7 +26,12 @@ export interface ExplainResult {
 
 /** BFS/DFS traversal of backlinks graph + LLM Q&A */
 export async function query(cwd: string, question: string, opts: QueryOptions = {}): Promise<QueryResult> {
-  opts.logger?.stepStart('query.init', { question });
+  const cleanedQuestion = opts.normalizeQuestion ? normalizeQueryText(question) : question;
+  opts.logger?.stepStart('query.init', {
+    question,
+    cleanedQuestion,
+    normalizeQuestion: !!opts.normalizeQuestion,
+  });
   const root = await requireRepo(cwd);
   const fileBack = opts.fileBack !== false; // default true
 
@@ -41,7 +48,7 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
   let relevantSlugs: string[] = [];
   try {
     opts.logger?.stepStart('query.fts-search');
-    const ftsQuery = buildSafeFtsQuery(question);
+    const ftsQuery = buildSafeFtsQuery(cleanedQuestion);
     if (!ftsQuery) {
       opts.logger?.stepEnd('query.fts-search', { emptyQuery: true });
       opts.logger?.stepEnd('query.init', { answered: false });
@@ -105,7 +112,7 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
     },
     {
       role: 'user',
-      content: `Wiki context:\n\n${context}\n\n---\n\nQuestion: ${question}`,
+      content: `Wiki context:\n\n${context}\n\n---\n\nQuestion: ${cleanedQuestion}`,
     },
   ];
 
@@ -126,16 +133,16 @@ export async function query(cwd: string, question: string, opts: QueryOptions = 
     opts.logger?.stepStart('query.file-back');
     const qaDir = path.join(root, '.lore', 'wiki', 'derived', 'qa');
     await fs.mkdir(qaDir, { recursive: true });
-    const slug = slugify(question).slice(0, 60);
+    const slug = slugify(cleanedQuestion).slice(0, 60);
     filedBackPath = path.join(qaDir, `${slug}.md`);
     const qaContent = [
       '---',
-      `title: "${question}"`,
+      `title: "${cleanedQuestion}"`,
       `date: ${new Date().toISOString()}`,
       `sources: [${sources.map(s => `"${s}"`).join(', ')}]`,
       '---',
       '',
-      `# ${question}`,
+      `# ${cleanedQuestion}`,
       '',
       result.content,
     ].join('\n');

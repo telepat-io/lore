@@ -100,6 +100,7 @@ lore compile
 # 4) Search and ask questions
 lore search "architecture"
 lore query "How does this system work?"
+lore query "teh qurey" --normalize-question
 ```
 
 ## Common Commands
@@ -115,6 +116,11 @@ lore status                # repository health dashboard
 lore settings              # configure model/provider parameters
 lore mcp                   # run MCP server on stdio
 ```
+
+MCP utility additions:
+
+- `check_duplicate(content?, sha256?)` verifies whether content is already stored in `.lore/raw/`.
+- `list_raw_tags()` returns format distribution and top inferred metadata tags from raw ingests.
 
 ## Settings and Secrets
 
@@ -173,6 +179,7 @@ Environment variables (highest precedence at runtime):
 - `LORE_CF_TOKEN`
 - `LORE_DISABLE_KEYTAR`
 - `LORE_LOG_MAX_FILES`
+- `LORE_QUERY_NORMALIZE`
 
 ## Learn More
 
