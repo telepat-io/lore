@@ -67,6 +67,27 @@ This is about knowledge management and [[Related Topic]].
     }
   });
 
+  it('filters low-signal wiki-link targets from graph edges', async () => {
+    const articlesDir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(
+      path.join(articlesDir, 'signals.md'),
+      '# Signals\n\nKeep [[System Architecture]] but drop [[it]] and [[the]].'
+    );
+
+    await rebuildIndex(tmpDir);
+
+    const db = openDb(tmpDir);
+    try {
+      const links = db
+        .prepare('SELECT from_slug, to_slug FROM links ORDER BY to_slug')
+        .all() as { from_slug: string; to_slug: string }[];
+
+      expect(links).toEqual([{ from_slug: 'signals', to_slug: 'system-architecture' }]);
+    } finally {
+      db.close();
+    }
+  });
+
   it('generates index.md', async () => {
     const articlesDir = path.join(tmpDir, '.lore', 'wiki', 'articles');
     await fs.writeFile(path.join(articlesDir, 'concept.md'), `---

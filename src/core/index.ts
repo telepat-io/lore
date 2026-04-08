@@ -3,6 +3,50 @@ import path from 'path';
 import { requireRepo } from './repo.js';
 import { openDb, resetDb } from './db.js';
 
+const LOW_SIGNAL_ENTITY_TOKENS = new Set([
+  'a',
+  'an',
+  'and',
+  'as',
+  'at',
+  'be',
+  'by',
+  'for',
+  'from',
+  'here',
+  'how',
+  'i',
+  'in',
+  'is',
+  'it',
+  'its',
+  'me',
+  'my',
+  'of',
+  'on',
+  'or',
+  'our',
+  'that',
+  'the',
+  'their',
+  'them',
+  'there',
+  'these',
+  'they',
+  'this',
+  'those',
+  'to',
+  'us',
+  'we',
+  'what',
+  'when',
+  'where',
+  'which',
+  'who',
+  'why',
+  'you',
+]);
+
 export interface IndexResult {
   articlesIndexed: number;
   linksIndexed: number;
@@ -148,15 +192,51 @@ function parseArticle(slug: string, content: string): ParsedArticle {
 
   // Extract [[wiki-links]]
   const linkPattern = /\[\[([^\]]+)\]\]/g;
-  const links: string[] = [];
+  const links = new Set<string>();
   let match;
   while ((match = linkPattern.exec(content)) !== null) {
-    // Slugify the link target
-    const target = match[1]!.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    links.push(target);
+    const rawTarget = match[1]?.trim() ?? '';
+    const slug = slugify(rawTarget);
+    if (shouldKeepLinkTarget(rawTarget, slug)) {
+      links.add(slug);
+    }
   }
 
-  return { title, body, links, tags };
+  return { title, body, links: [...links], tags };
+}
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+}
+
+function shouldKeepLinkTarget(rawTarget: string, slug: string): boolean {
+  if (!slug || slug.length < 2) {
+    return false;
+  }
+
+  const words = rawTarget
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+
+  if (words.length === 0) {
+    return false;
+  }
+
+  if (words.length === 1) {
+    const token = words[0]!;
+    if (LOW_SIGNAL_ENTITY_TOKENS.has(token)) {
+      return false;
+    }
+    if (token.length < 3 && !/\d/.test(token)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 async function generateIndexMd(

@@ -156,6 +156,10 @@ Compile truncation safety:
 - On detection, Lore retries with smaller batch sizes automatically.
 - If truncation persists at batch size 1, compile fails with an actionable error and does not write partial article files.
 
+Graph quality guardrail:
+
+- During index rebuild, Lore filters low-signal wiki-link/entity targets (for example `[[it]]`, `[[the]]`) so graph traversal and path results stay focused on meaningful concepts.
+
 Run logging:
 
 - `lore ingest`, `lore compile`, and `lore query` now emit structured run logs to `.lore/logs/<runId>.jsonl`.
