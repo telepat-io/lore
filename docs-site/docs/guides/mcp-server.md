@@ -29,6 +29,12 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 | `list_gaps()` | List missing conceptual targets referenced by links |
 | `list_ambiguous()` | List articles marked `confidence: ambiguous` |
 
+## Tool Groups
+
+- Retrieval: `search`, `ask`, `list_articles`, `get_article`, `get_neighbors`, `path`
+- Graph diagnostics: `graph_stats`, `lint_summary`, `list_orphans`, `list_gaps`, `list_ambiguous`
+- Ingest/index maintenance: `check_duplicate`, `list_raw_tags`, `rebuild_index`
+
 ## New Utility Tools
 
 - `check_duplicate` accepts either raw `content` (hashed server-side) or a known `sha256` and returns whether an existing raw entry already exists.
@@ -40,3 +46,56 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 - `list_orphans` returns a focused orphan-only view from lint diagnostics for graph maintenance workflows.
 - `list_gaps` returns unresolved conceptual targets so agents can prioritize article creation.
 - `list_ambiguous` returns uncertain articles for review and clarification workflows.
+
+## Example MCP Calls
+
+Example duplicate precheck:
+
+```json
+{
+	"name": "check_duplicate",
+	"arguments": {
+		"content": "Architecture migration notes..."
+	}
+}
+```
+
+Example response:
+
+```json
+{
+	"duplicate": true,
+	"sha256": "...",
+	"rawPath": ".../.lore/raw/...",
+	"title": "Architecture Notes",
+	"format": "md"
+}
+```
+
+Example taxonomy summary call:
+
+```json
+{
+	"name": "list_raw_tags",
+	"arguments": {}
+}
+```
+
+Example index rebuild with repair:
+
+```json
+{
+	"name": "rebuild_index",
+	"arguments": {
+		"repair": true
+	}
+}
+```
+
+## Recommended Agent Maintenance Loop
+
+1. `list_orphans` to find disconnected concepts.
+2. `list_gaps` to find missing concept pages.
+3. `list_ambiguous` to identify uncertain content.
+4. perform edits/compile actions.
+5. `rebuild_index(repair=true)` to refresh graph/search state.

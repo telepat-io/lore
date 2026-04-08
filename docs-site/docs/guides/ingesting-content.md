@@ -22,6 +22,30 @@ lore ingest <path|url>
 
 All ingested content is stored in `.lore/raw/<sha256>/` with `extracted.md` and `meta.json`.
 
+## Raw Entry Structure
+
+Each raw entry is stored under:
+
+```text
+.lore/raw/<sha256>/
+	extracted.md
+	meta.json
+	original.<ext> (or original.txt for URLs)
+```
+
+Example `meta.json`:
+
+```json
+{
+	"sha256": "<sha256>",
+	"format": "json",
+	"title": "Conversation Transcript",
+	"sourcePath": "/abs/path/to/file.json",
+	"date": "2026-04-09T00:00:00.000Z",
+	"tags": ["docs", "frontend", "decision"]
+}
+```
+
 ## Folder-Based Topical Tags
 
 For local file ingest, Lore infers a small set of topic tags from directory names and writes them to `meta.json.tags`.
@@ -32,6 +56,33 @@ For local file ingest, Lore infers a small set of topic tags from directory name
 
 Lore also applies lightweight content heuristics during ingest and can append semantic tags such as `decision`, `preference`, `problem`, `milestone`, and `emotional` when matching phrases are detected.
 
+## Duplicate-Aware Ingest
+
+Lore computes a SHA-256 digest from original input and reuses existing raw entries when the digest already exists.
+
+- Duplicate hit behavior:
+	- parse/extract is skipped
+	- existing metadata is reused
+	- manifest mtime is refreshed
+- JSON output includes `duplicate: true` on duplicate hits.
+
+Example:
+
+```bash
+lore ingest ./docs/architecture.md --json
+```
+
+Possible output fields:
+
+```json
+{
+	"sha256": "...",
+	"format": "md",
+	"title": "Architecture",
+	"duplicate": true
+}
+```
+
 ## How Conversation Export Ingestion Works (`.json` / `.jsonl`)
 
 1. Lore first attempts to detect known conversation schemas.
@@ -40,6 +91,13 @@ Lore also applies lightweight content heuristics during ingest and can append se
 	- assistant turns are preserved as response blocks
 3. Current auto-detection targets common exports such as role/content arrays, ChatGPT mapping exports, and Codex/Claude-style JSONL logs.
 4. If no known schema is detected, Lore falls back to generic JSON-to-markdown conversion.
+
+Supported conversation schema families include:
+
+- role/content arrays (`[{"role":"user"...}]`)
+- ChatGPT mapping exports
+- Claude/Codex JSONL session logs
+- Slack-style message arrays
 
 ## How PDF Ingestion Works
 
@@ -67,3 +125,16 @@ Extractor provenance:
 - Supported formats: `/reference/supported-formats`
 - LLM and parser models: `/reference/llm-models`
 - Credentials and secrets: `/guides/credentials-and-secrets`
+
+## Troubleshooting
+
+- JSON did not normalize to transcript:
+	- ensure file is valid JSON/JSONL
+	- check that records contain both user/assistant style turns
+	- if schema is unknown, Lore will intentionally fall back to generic JSON markdown
+- Unexpected tags:
+	- folder tags are path-derived and bounded
+	- heuristic tags are phrase-driven and conservative
+- URL ingestion path:
+	- with `LORE_CF_ACCOUNT_ID` + `LORE_CF_TOKEN`, Lore tries Cloudflare Browser Rendering first
+	- on CF failure, Lore falls back to Jina fetch automatically

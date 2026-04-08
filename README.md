@@ -22,6 +22,18 @@ Inspired by Andrej Karpathy's note on agent memory and continuity: https://x.com
 - Export to multiple formats: `bundle`, `slides`, `pdf`, `docx`, `web`, `canvas`, `graphml`
 - Optional MCP server mode for agent access
 
+## Recent Enhancements
+
+The latest Lore updates focus on making ingestion and maintenance safer, and making MCP automation richer.
+
+- Conversation export normalization: common `.json`/`.jsonl` chat exports are auto-detected and transformed into transcript markdown.
+- Metadata enrichment on ingest: local paths generate topical tags and extracted text can add heuristic memory tags.
+- Duplicate-aware ingest: re-ingesting the same source short-circuits against existing `.lore/raw/<sha>/` records.
+- Index repair mode: `lore index --repair` reconstructs missing manifest entries before rebuilding search/backlinks.
+- Graph quality guardrails: low-signal link targets are filtered during indexing.
+- Query cleanup (opt-in): conservative typo normalization preserves technical tokens while improving retrieval robustness.
+- MCP surface expansion: duplicate checks, raw taxonomy summaries, index rebuild, and lint-focused maintenance tools.
+
 ## Ingesting PDFs, YouTube, and More
 
 Lore supports a mixed ingestion pipeline, including PDFs and video URLs.
@@ -37,6 +49,20 @@ Video provenance:
 - Video ingest metadata now records which extractor path was used in `.lore/raw/<sha>/meta.json` under `extractor`.
 - Values include `yt-dlp` and fallback reasons such as `url-fallback-no-ytdlp`, `url-fallback-no-subs`, and `url-fallback-empty-transcript`.
 
+Raw metadata shape:
+
+```json
+{
+  "sha256": "<sha256>",
+  "format": "json",
+  "title": "Conversation Transcript",
+  "extractor": "yt-dlp",
+  "sourcePath": "/abs/path/or/sourceUrl",
+  "date": "2026-04-09T00:00:00.000Z",
+  "tags": ["docs", "frontend", "decision"]
+}
+```
+
 Folder-based topical tags:
 
 - Local file ingests now infer `meta.json.tags` from folder names (for example `docs`, `frontend`, `backend`, `testing`, `infra`).
@@ -50,6 +76,12 @@ Duplicate precheck:
 
 - Re-ingesting identical content now short-circuits on existing `.lore/raw/<sha>/` data.
 - JSON output includes `duplicate: true` for duplicate hits.
+
+Duplicate detection behavior:
+
+- SHA is computed from original input bytes (or URL string for URL ingest).
+- If `.lore/raw/<sha>/extracted.md` + `meta.json` already exist, Lore reuses stored metadata and updates manifest mtime.
+- This avoids redundant parse/extract work and stabilizes repeated ingest automation.
 
 References:
 
@@ -117,6 +149,19 @@ lore settings              # configure model/provider parameters
 lore mcp                   # run MCP server on stdio
 ```
 
+High-signal maintenance workflows:
+
+```bash
+# rebuild index and recover missing manifest entries first
+lore index --repair
+
+# ask with typo cleanup enabled
+lore query "teh qurey about architecture" --normalize-question
+
+# ingest the same artifact repeatedly in CI without duplicate churn
+lore ingest ./docs/architecture.md --json
+```
+
 MCP utility additions:
 
 - `check_duplicate(content?, sha256?)` verifies whether content is already stored in `.lore/raw/`.
@@ -125,6 +170,13 @@ MCP utility additions:
 - `list_orphans()` returns articles with no incoming links.
 - `list_gaps()` returns missing conceptual targets referenced by links.
 - `list_ambiguous()` returns articles marked with ambiguous confidence.
+
+Typical MCP maintenance loop:
+
+1. Call `list_orphans()` to find disconnected concepts.
+2. Call `list_gaps()` to identify missing articles.
+3. Call `list_ambiguous()` to review uncertain claims.
+4. After edits/compile, call `rebuild_index(repair=true)`.
 
 ## Settings and Secrets
 
@@ -188,6 +240,11 @@ Environment variables (highest precedence at runtime):
 - `LORE_DISABLE_KEYTAR`
 - `LORE_LOG_MAX_FILES`
 - `LORE_QUERY_NORMALIZE`
+
+Environment notes:
+
+- `LORE_QUERY_NORMALIZE=true` enables query cleanup by default (same behavior as `--normalize-question`).
+- `LORE_LOG_MAX_FILES` controls structured run-log retention in `.lore/logs/`.
 
 ## Learn More
 

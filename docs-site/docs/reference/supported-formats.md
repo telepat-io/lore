@@ -18,6 +18,26 @@ sidebar_position: 2
 | URLs | Jina r.jina.ai | None (or CF credentials) |
 | Video URLs | yt-dlp subtitles | yt-dlp installed (falls back to URL fetch if unavailable) |
 
+## Conversation Export Support (`.json` / `.jsonl`)
+
+Lore attempts schema detection before generic JSON rendering.
+
+Currently recognized schema families include:
+
+- role/content arrays
+- ChatGPT mapping exports
+- Codex/Claude-style JSONL session logs
+- Slack-style message arrays
+
+If a file does not match known conversation patterns, Lore falls back to generic JSON-to-markdown conversion.
+
+## Raw Metadata Notes
+
+- all ingests create `.lore/raw/<sha256>/meta.json`
+- local file ingests can infer folder-derived tags
+- extracted text can append heuristic memory tags (`decision`, `preference`, `problem`, `milestone`, `emotional`)
+- duplicate ingests reuse existing raw entries
+
 ## Export Formats
 
 `bundle`, `slides`, `pdf`, `docx`, `web`, `canvas`, `graphml`
