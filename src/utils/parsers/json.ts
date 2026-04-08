@@ -179,7 +179,7 @@ function extractChatGptMappingMessages(data: unknown): ConversationMessage[] | n
     return null;
   }
 
-  const mapping = data.mapping;
+  const mapping: Record<string, unknown> = data.mapping;
   let rootId: string | null = null;
   let fallbackRootId: string | null = null;
 
@@ -207,7 +207,7 @@ function extractChatGptMappingMessages(data: unknown): ConversationMessage[] | n
 
   while (currentId && !visited.has(currentId)) {
     visited.add(currentId);
-    const node = mapping[currentId];
+    const node: unknown = mapping[currentId];
     if (!isRecord(node)) {
       break;
     }
@@ -223,7 +223,7 @@ function extractChatGptMappingMessages(data: unknown): ConversationMessage[] | n
       }
     }
 
-    const children = Array.isArray(node.children) ? node.children : [];
+    const children: unknown[] = Array.isArray(node.children) ? node.children : [];
     currentId = typeof children[0] === 'string' ? children[0] : null;
   }
 

@@ -6,14 +6,24 @@ import { openDb, resetDb } from './db.js';
 export interface IndexResult {
   articlesIndexed: number;
   linksIndexed: number;
+  repairedManifestEntries: number;
+}
+
+export interface IndexOptions {
+  repair?: boolean;
 }
 
 /** Rebuild FTS5 search index + backlinks table + regenerate index.md */
-export async function rebuildIndex(cwd: string): Promise<IndexResult> {
+export async function rebuildIndex(cwd: string, opts: IndexOptions = {}): Promise<IndexResult> {
   const root = await requireRepo(cwd);
   const db = openDb(root);
+  let repairedManifestEntries = 0;
 
   try {
+    if (opts.repair) {
+      repairedManifestEntries = await repairManifest(root);
+    }
+
     // Reset and recreate all tables
     resetDb(db);
 
@@ -62,10 +72,43 @@ export async function rebuildIndex(cwd: string): Promise<IndexResult> {
     // Generate index.md
     await generateIndexMd(root, articleSummaries);
 
-    return { articlesIndexed: articleData.length, linksIndexed };
+    return { articlesIndexed: articleData.length, linksIndexed, repairedManifestEntries };
   } finally {
     db.close();
   }
+}
+
+async function repairManifest(root: string): Promise<number> {
+  const rawDir = path.join(root, '.lore', 'raw');
+  let rawDirs: string[] = [];
+  try {
+    rawDirs = await fs.readdir(rawDir);
+  } catch {
+    rawDirs = [];
+  }
+
+  const manifestPath = path.join(root, '.lore', 'manifest.json');
+  let manifest: Record<string, unknown> = {};
+  try {
+    manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8')) as Record<string, unknown>;
+  } catch {
+    manifest = {};
+  }
+
+  let repaired = 0;
+  for (const sha of rawDirs) {
+    if (manifest[sha]) {
+      continue;
+    }
+    manifest[sha] = { mtime: new Date().toISOString() };
+    repaired++;
+  }
+
+  if (repaired > 0) {
+    await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+  }
+
+  return repaired;
 }
 
 interface ParsedArticle {

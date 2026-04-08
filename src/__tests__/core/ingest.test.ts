@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
+import { jest } from '@jest/globals';
 import { ingest } from '../../core/ingest.js';
 import { initRepo } from '../../core/repo.js';
 
@@ -114,5 +115,67 @@ describe('ingest', () => {
       path.join(tmpDir, '.lore', 'raw', result.sha256, 'original.md'), 'utf-8'
     );
     expect(original).toBe(content);
+  });
+
+  it('returns duplicate=true on re-ingest of same local file', async () => {
+    const mdFile = path.join(tmpDir, 'dupe.md');
+    await fs.writeFile(mdFile, '# Duplicate\n\nSame content.');
+
+    const first = await ingest(tmpDir, mdFile);
+    const second = await ingest(tmpDir, mdFile);
+
+    expect(first.duplicate).toBeUndefined();
+    expect(second.duplicate).toBe(true);
+    expect(second.sha256).toBe(first.sha256);
+    expect(second.title).toBe(first.title);
+  });
+
+  it('infers folder-based tags for local file ingests', async () => {
+    const nestedDir = path.join(tmpDir, 'docs', 'frontend', 'api');
+    await fs.mkdir(nestedDir, { recursive: true });
+
+    const mdFile = path.join(nestedDir, 'guide.md');
+    await fs.writeFile(mdFile, '# Guide\n\nLocal content.');
+
+    const result = await ingest(tmpDir, mdFile);
+    const meta = JSON.parse(await fs.readFile(
+      path.join(tmpDir, '.lore', 'raw', result.sha256, 'meta.json'), 'utf-8'
+    )) as { tags: string[] };
+
+    expect(meta.tags).toEqual(expect.arrayContaining(['docs', 'frontend', 'backend']));
+  });
+
+  it('keeps tags empty for URL ingests', async () => {
+    const parseUrlMock = jest.fn<() => Promise<string>>().mockResolvedValue('# URL Content\n\nHello world.');
+
+    jest.resetModules();
+    jest.unstable_mockModule('../../utils/parsers/url.js', () => ({
+      parseUrl: parseUrlMock,
+    }));
+
+    const ingestModule = await import('../../core/ingest.js');
+    const result = await ingestModule.ingest(tmpDir, 'https://example.com/article');
+
+    const meta = JSON.parse(await fs.readFile(
+      path.join(tmpDir, '.lore', 'raw', result.sha256, 'meta.json'), 'utf-8'
+    )) as { tags: string[]; sourceUrl?: string };
+
+    expect(meta.tags).toEqual([]);
+    expect(meta.sourceUrl).toBe('https://example.com/article');
+  });
+
+  it('adds memory-type tags when content matches heuristic patterns', async () => {
+    const mdFile = path.join(tmpDir, 'notes.md');
+    await fs.writeFile(
+      mdFile,
+      '# Sprint Notes\n\nWe decided to ship this today.\nI prefer this architecture.\nThe bug is finally fixed and it works.'
+    );
+
+    const result = await ingest(tmpDir, mdFile);
+    const meta = JSON.parse(await fs.readFile(
+      path.join(tmpDir, '.lore', 'raw', result.sha256, 'meta.json'), 'utf-8'
+    )) as { tags: string[] };
+
+    expect(meta.tags).toEqual(expect.arrayContaining(['decision', 'preference', 'problem', 'milestone']));
   });
 });

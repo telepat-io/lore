@@ -22,6 +22,16 @@ lore ingest <path|url>
 
 All ingested content is stored in `.lore/raw/<sha256>/` with `extracted.md` and `meta.json`.
 
+## Folder-Based Topical Tags
+
+For local file ingest, Lore infers a small set of topic tags from directory names and writes them to `meta.json.tags`.
+
+- Example mapped categories include `frontend`, `backend`, `docs`, `testing`, `tooling`, `infra`, `data`, `mobile`, and `design`.
+- URL ingest does not infer folder tags and keeps `tags: []`.
+- Tags are intentionally bounded and deduplicated so metadata stays concise.
+
+Lore also applies lightweight content heuristics during ingest and can append semantic tags such as `decision`, `preference`, `problem`, `milestone`, and `emotional` when matching phrases are detected.
+
 ## How Conversation Export Ingestion Works (`.json` / `.jsonl`)
 
 1. Lore first attempts to detect known conversation schemas.

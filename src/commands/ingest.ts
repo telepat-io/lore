@@ -12,7 +12,8 @@ export async function ingestCommand(path: string, opts: OptionValues): Promise<v
       process.stdout.write(JSON.stringify({ ...result, runId: logger.runId, logPath: logger.logPath }) + '\n');
     } else {
       const extractorInfo = result.extractor ? ` extractor=${result.extractor}` : '';
-      process.stderr.write(`Ingested: ${result.sha256} (${result.format})${extractorInfo}\n`);
+      const duplicateInfo = result.duplicate ? ' duplicate=true' : '';
+      process.stderr.write(`Ingested: ${result.sha256} (${result.format})${extractorInfo}${duplicateInfo}\n`);
     }
   } catch (error) {
     logger.error('ingest.command', error);

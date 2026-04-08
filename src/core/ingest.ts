@@ -17,6 +17,7 @@ export interface IngestResult {
   title: string;
   extractedPath: string;
   extractor?: VideoExtractor;
+  duplicate?: boolean;
 }
 
 interface MetaJson {
@@ -32,6 +33,98 @@ interface MetaJson {
 
 const MARKER_EXTS = new Set(['.pdf', '.docx', '.pptx', '.xlsx', '.epub']);
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.tiff']);
+
+const TOKEN_TAG_MAP: Record<string, string> = {
+  api: 'backend',
+  backend: 'backend',
+  server: 'backend',
+  client: 'frontend',
+  frontend: 'frontend',
+  ui: 'frontend',
+  docs: 'docs',
+  documentation: 'docs',
+  guide: 'docs',
+  guides: 'docs',
+  test: 'testing',
+  tests: 'testing',
+  e2e: 'testing',
+  spec: 'testing',
+  specs: 'testing',
+  ci: 'tooling',
+  scripts: 'tooling',
+  tooling: 'tooling',
+  infra: 'infra',
+  ops: 'infra',
+  deploy: 'infra',
+  database: 'data',
+  db: 'data',
+  sql: 'data',
+  migration: 'data',
+  migrations: 'data',
+  android: 'mobile',
+  ios: 'mobile',
+  mobile: 'mobile',
+  ux: 'design',
+  design: 'design',
+};
+
+const TOKEN_IGNORE = new Set([
+  '',
+  '.',
+  '..',
+  'users',
+  'user',
+  'downloads',
+  'desktop',
+  'documents',
+  'tmp',
+  'var',
+  'private',
+  'src',
+  'lib',
+  'app',
+  'apps',
+  'code',
+  'project',
+  'projects',
+  'workspace',
+]);
+
+const MEMORY_TYPE_PATTERNS: Record<string, RegExp[]> = {
+  decision: [
+    /\bwe decided\b/i,
+    /\bdecision\b/i,
+    /\bchose to\b/i,
+    /\bgo with\b/i,
+  ],
+  preference: [
+    /\bi prefer\b/i,
+    /\bprefer to\b/i,
+    /\bwould rather\b/i,
+    /\bmy preference\b/i,
+  ],
+  problem: [
+    /\berror\b/i,
+    /\bfailing\b/i,
+    /\bbroken\b/i,
+    /\bissue\b/i,
+    /\bbug\b/i,
+  ],
+  milestone: [
+    /\bit (finally )?works\b/i,
+    /\bshipped\b/i,
+    /\breleased\b/i,
+    /\bcompleted\b/i,
+    /\bmilestone\b/i,
+  ],
+  emotional: [
+    /\bexcited\b/i,
+    /\bfrustrated\b/i,
+    /\bworried\b/i,
+    /\bconfident\b/i,
+    /\bstressed\b/i,
+  ],
+};
 
 export interface IngestOptions {
   logger?: RunLogger;
@@ -49,6 +142,7 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
   let format: string;
   let extracted: string;
   let extractor: VideoExtractor | undefined;
+  let sourcePath: string | undefined;
 
   if (isUrl) {
     logger?.info('ingest.route', { isUrl: true, isVideo: isVideoUrl(input) });
@@ -71,6 +165,7 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
   } else {
     // File input
     const absPath = path.resolve(cwd, input);
+    sourcePath = absPath;
     const ext = path.extname(absPath).toLowerCase();
     logger?.info('ingest.route', { isUrl: false, ext });
     rawContent = await fs.readFile(absPath);
@@ -102,6 +197,10 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
   const normalized = await normalizeMarkdown(extracted);
   logger?.stepEnd('ingest.normalize', { title: normalized.title });
 
+  const inferredPathTags = sourcePath ? inferTagsFromPath(sourcePath) : [];
+  const inferredMemoryTags = inferMemoryTypeTags(normalized.markdown);
+  const inferredTags = mergeTags(inferredPathTags, inferredMemoryTags);
+
   // Compute SHA256 of the original content
   const sha256 = typeof rawContent === 'string'
     ? hashContent(rawContent)
@@ -109,6 +208,28 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
 
   // Create raw/<sha256>/ directory
   const rawDir = path.join(root, '.lore', 'raw', sha256);
+  const existing = await readExistingIngest(rawDir);
+  if (existing) {
+    logger?.info('ingest.duplicate', { sha256, format: existing.format });
+    await updateManifestMtime(root, sha256, logger);
+    logger?.stepEnd('ingest.init', {
+      sha256,
+      format: existing.format,
+      title: existing.title,
+      extractor: existing.extractor,
+      duplicate: true,
+    });
+
+    return {
+      sha256,
+      format: existing.format,
+      title: existing.title,
+      extractedPath: path.join(rawDir, 'extracted.md'),
+      ...(existing.extractor ? { extractor: existing.extractor } : {}),
+      duplicate: true,
+    };
+  }
+
   logger?.stepStart('ingest.persist.raw', { rawDir });
   await fs.mkdir(rawDir, { recursive: true });
 
@@ -132,24 +253,119 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
     title: normalized.title,
     ...(extractor ? { extractor } : {}),
     date: new Date().toISOString(),
-    tags: [],
-    ...(isUrl ? { sourceUrl: input } : { sourcePath: path.resolve(cwd, input) }),
+    tags: inferredTags,
+    ...(isUrl ? { sourceUrl: input } : { sourcePath: sourcePath ?? path.resolve(cwd, input) }),
   };
   await fs.writeFile(path.join(rawDir, 'meta.json'), JSON.stringify(meta, null, 2));
   logger?.stepEnd('ingest.persist.raw', { sha256, format, extractor });
 
   // Update manifest.json
+  await updateManifestMtime(root, sha256, logger);
+
+  logger?.stepEnd('ingest.init', { sha256, format, title: normalized.title, extractor });
+
+  return { sha256, format, title: normalized.title, extractedPath, ...(extractor ? { extractor } : {}) };
+}
+
+interface ExistingIngestMeta {
+  title: string;
+  format: string;
+  extractor?: VideoExtractor;
+}
+
+async function readExistingIngest(rawDir: string): Promise<ExistingIngestMeta | null> {
+  const extractedPath = path.join(rawDir, 'extracted.md');
+  const metaPath = path.join(rawDir, 'meta.json');
+
+  try {
+    await fs.access(extractedPath);
+    const rawMeta = await fs.readFile(metaPath, 'utf-8');
+    const parsed = JSON.parse(rawMeta) as Partial<MetaJson>;
+    if (typeof parsed.title !== 'string' || typeof parsed.format !== 'string') {
+      return null;
+    }
+    return {
+      title: parsed.title,
+      format: parsed.format,
+      ...(parsed.extractor ? { extractor: parsed.extractor } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function updateManifestMtime(root: string, sha256: string, logger?: RunLogger): Promise<void> {
   const manifestPath = path.join(root, '.lore', 'manifest.json');
   let manifest: Record<string, unknown> = {};
   logger?.stepStart('ingest.update.manifest');
   try {
     manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8')) as Record<string, unknown>;
-  } catch { /* fresh manifest */ }
+  } catch {
+    // fresh manifest
+  }
   manifest[sha256] = { mtime: new Date().toISOString() };
   await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
   logger?.stepEnd('ingest.update.manifest');
+}
 
-  logger?.stepEnd('ingest.init', { sha256, format, title: normalized.title, extractor });
+function inferTagsFromPath(sourcePath: string): string[] {
+  const dir = path.dirname(sourcePath).toLowerCase();
+  const tokens = dir
+    .split(path.sep)
+    .flatMap((segment) => segment.split(/[^a-z0-9]+/))
+    .filter((token) => token.length > 0);
 
-  return { sha256, format, title: normalized.title, extractedPath, ...(extractor ? { extractor } : {}) };
+  const tags: string[] = [];
+  const seen = new Set<string>();
+
+  for (const token of tokens) {
+    if (TOKEN_IGNORE.has(token)) {
+      continue;
+    }
+
+    const mapped = TOKEN_TAG_MAP[token] ?? token;
+    if (mapped.length < 3 || /^\d+$/.test(mapped)) {
+      continue;
+    }
+
+    if (!seen.has(mapped)) {
+      seen.add(mapped);
+      tags.push(mapped);
+    }
+
+    if (tags.length >= 8) {
+      break;
+    }
+  }
+
+  return tags;
+}
+
+function inferMemoryTypeTags(content: string): string[] {
+  const tags: string[] = [];
+  for (const [tag, patterns] of Object.entries(MEMORY_TYPE_PATTERNS)) {
+    if (patterns.some((pattern) => pattern.test(content))) {
+      tags.push(tag);
+    }
+  }
+  return tags;
+}
+
+function mergeTags(...tagLists: string[][]): string[] {
+  const merged: string[] = [];
+  const seen = new Set<string>();
+
+  for (const tagList of tagLists) {
+    for (const tag of tagList) {
+      if (!seen.has(tag)) {
+        seen.add(tag);
+        merged.push(tag);
+      }
+      if (merged.length >= 12) {
+        return merged;
+      }
+    }
+  }
+
+  return merged;
 }

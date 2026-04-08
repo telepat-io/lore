@@ -54,6 +54,7 @@ program
 program
   .command('index')
   .description('Rebuild the FTS5 search index and regenerate index.md')
+  .option('--repair', 'Repair missing manifest entries from .lore/raw before indexing')
   .option('--json', 'Output JSON')
   .action(indexCommand);
 

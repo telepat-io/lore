@@ -37,6 +37,20 @@ Video provenance:
 - Video ingest metadata now records which extractor path was used in `.lore/raw/<sha>/meta.json` under `extractor`.
 - Values include `yt-dlp` and fallback reasons such as `url-fallback-no-ytdlp`, `url-fallback-no-subs`, and `url-fallback-empty-transcript`.
 
+Folder-based topical tags:
+
+- Local file ingests now infer `meta.json.tags` from folder names (for example `docs`, `frontend`, `backend`, `testing`, `infra`).
+- URL ingests keep `tags: []` unless tags are added later in your pipeline.
+
+Heuristic memory-type tags:
+
+- Ingest also applies lightweight heuristics over extracted text and adds tags such as `decision`, `preference`, `problem`, `milestone`, and `emotional` when matching phrases are found.
+
+Duplicate precheck:
+
+- Re-ingesting identical content now short-circuits on existing `.lore/raw/<sha>/` data.
+- JSON output includes `duplicate: true` for duplicate hits.
+
 References:
 
 - Supported formats: https://docs.telepat.io/lore/reference/supported-formats
@@ -92,6 +106,7 @@ lore query "How does this system work?"
 
 ```bash
 lore index                 # rebuild search index
+lore index --repair        # rebuild index and repair missing manifest entries
 lore explain <concept>     # deep-dive with related context
 lore path <from> <to>      # shortest conceptual path
 lore lint                  # wiki health checks

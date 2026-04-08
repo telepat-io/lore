@@ -86,4 +86,27 @@ Content here.
     expect(indexMd).toContain('My Concept');
     expect(indexMd).toContain('architecture');
   });
+
+  it('repairs missing manifest entries when repair mode is enabled', async () => {
+    const sha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const rawEntryDir = path.join(tmpDir, '.lore', 'raw', sha);
+    await fs.mkdir(rawEntryDir, { recursive: true });
+    await fs.writeFile(path.join(rawEntryDir, 'extracted.md'), '# Repaired\n\nContent.');
+    await fs.writeFile(path.join(rawEntryDir, 'meta.json'), JSON.stringify({
+      sha256: sha,
+      format: 'md',
+      title: 'Repaired',
+      date: new Date().toISOString(),
+      tags: [],
+      sourcePath: path.join(tmpDir, 'repaired.md'),
+    }, null, 2));
+
+    await fs.writeFile(path.join(tmpDir, '.lore', 'manifest.json'), JSON.stringify({}, null, 2));
+
+    const result = await rebuildIndex(tmpDir, { repair: true });
+    expect(result.repairedManifestEntries).toBe(1);
+
+    const manifest = JSON.parse(await fs.readFile(path.join(tmpDir, '.lore', 'manifest.json'), 'utf-8')) as Record<string, unknown>;
+    expect(manifest[sha]).toBeTruthy();
+  });
 });

@@ -18,6 +18,9 @@ lore compile
 # Rebuild the search index
 lore index
 
+# Optional: repair missing manifest entries before indexing
+lore index --repair
+
 # Search your knowledge base
 lore search "concept"
 
