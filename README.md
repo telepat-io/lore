@@ -249,6 +249,7 @@ Environment notes:
 ## Learn More
 
 - Docs: https://docs.telepat.io/lore
+- Docs theme follows OS/browser dark-mode preference by default.
 - Guides: https://docs.telepat.io/lore/guides
 - Reference: https://docs.telepat.io/lore/reference
 - Ingesting content: https://docs.telepat.io/lore/guides/ingesting-content

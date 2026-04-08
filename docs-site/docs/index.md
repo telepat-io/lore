@@ -20,6 +20,10 @@ lore compile
 lore search "your query"
 ```
 
+## Docs Theme Behavior
+
+The docs site follows your OS/browser color scheme by default (`prefers-color-scheme`).
+
 ## What Is New
 
 - Ingest now auto-normalizes supported chat exports (`.json`/`.jsonl`) into transcript markdown.
