@@ -5,6 +5,7 @@ import { streamChat, type LlmMessage } from './llm.js';
 import { rebuildIndex } from './index.js';
 import { type RunLogger } from './logger.js';
 import { hashContent } from '../utils/hash.js';
+import { acquireCompileLock, releaseCompileLock } from './lock.js';
 
 export interface CompileOptions {
   force?: boolean;
@@ -67,107 +68,120 @@ export async function compile(cwd: string, opts: CompileOptions = {}): Promise<C
   opts.logger?.stepStart('compile.init', { force: !!opts.force });
   const root = await requireRepo(cwd);
 
-  // Read manifest to find uncompiled entries
-  const manifestPath = path.join(root, '.lore', 'manifest.json');
-  let manifest: Record<string, ManifestEntry> = {};
-  try {
-    manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8')) as Record<string, ManifestEntry>;
-  } catch { /* empty */ }
-
-  // Find raw entries that need compilation
-  const rawDir = path.join(root, '.lore', 'raw');
-  let rawDirs: string[];
-  try {
-    rawDirs = await fs.readdir(rawDir);
-  } catch {
-    rawDirs = [];
+  opts.logger?.stepStart('compile.lock');
+  const lockAcquired = await acquireCompileLock(root);
+  if (!lockAcquired) {
+    opts.logger?.stepEnd('compile.lock', { acquired: false });
+    throw new Error('Another compile is already running. Try again later.');
   }
+  opts.logger?.stepEnd('compile.lock', { acquired: true });
 
-  const toCompile: { sha256: string; extracted: string; extractedHash: string; meta: { title: string } }[] = [];
+  try {
 
-  for (const sha256 of rawDirs) {
+    // Read manifest to find uncompiled entries
+    const manifestPath = path.join(root, '.lore', 'manifest.json');
+    let manifest: Record<string, ManifestEntry> = {};
     try {
-      const extracted = await fs.readFile(path.join(rawDir, sha256, 'extracted.md'), 'utf-8');
-      const metaRaw = await fs.readFile(path.join(rawDir, sha256, 'meta.json'), 'utf-8');
-      const meta = JSON.parse(metaRaw) as { title: string };
-      const extractedHash = hashContent(extracted);
-      const entry = manifest[sha256];
-      const alreadyCompiled = !!entry?.compiledAt;
-      const isUnchanged = alreadyCompiled && entry?.extractedHash === extractedHash;
+      manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8')) as Record<string, ManifestEntry>;
+    } catch { /* empty */ }
 
-      if (!opts.force && isUnchanged) continue;
-
-      toCompile.push({ sha256, extracted, extractedHash, meta });
+    // Find raw entries that need compilation
+    const rawDir = path.join(root, '.lore', 'raw');
+    let rawDirs: string[];
+    try {
+      rawDirs = await fs.readdir(rawDir);
     } catch {
-      // Skip malformed entries
+      rawDirs = [];
     }
-  }
 
-  if (toCompile.length === 0) {
-    opts.logger?.info('compile.noop', { rawDirs: rawDirs.length });
-    opts.logger?.stepEnd('compile.init', { articlesWritten: 0, rawProcessed: 0 });
-    return { articlesWritten: 0, articlesSkipped: rawDirs.length, rawProcessed: 0 };
-  }
+    const toCompile: { sha256: string; extracted: string; extractedHash: string; meta: { title: string } }[] = [];
 
-  const articlesDir = path.join(root, '.lore', 'wiki', 'articles');
-  await fs.mkdir(articlesDir, { recursive: true });
-
-  let articlesWritten = 0;
-  let processedCount = 0;
-  const total = toCompile.length;
-
-  for (let i = 0; i < toCompile.length;) {
-    let batchSize = Math.min(BATCH_SIZE, toCompile.length - i);
-    let batchSucceeded = false;
-
-    while (!batchSucceeded) {
-      const batch = toCompile.slice(i, i + batchSize);
-      opts.logger?.stepStart('compile.batch', {
-        offset: i,
-        batchSize,
-      });
-
+    for (const sha256 of rawDirs) {
       try {
-        const written = await compileBatch(cwd, batch, articlesDir, articlesWritten, manifest, manifestPath, opts.logger);
-        articlesWritten += written;
-        processedCount += batch.length;
-        i += batch.length;
-        opts.onProgress?.(processedCount, total);
-        opts.logger?.progress('compile.progress', processedCount, total, { lastBatchSize: batch.length });
-        opts.logger?.stepEnd('compile.batch', { written });
-        batchSucceeded = true;
-      } catch (error) {
-        opts.logger?.error('compile.batch', error, { offset: i, batchSize });
-        const canRetry = error instanceof RetryableCompileError && batchSize > 1;
-        if (!canRetry) {
-          throw error;
-        }
-        const nextBatchSize = Math.max(1, Math.floor(batchSize / 2));
-        opts.logger?.retry('compile.batch.retry', {
-          reason: error.message,
-          previousBatchSize: batchSize,
-          nextBatchSize,
-        });
-        batchSize = Math.max(1, Math.floor(batchSize / 2));
+        const extracted = await fs.readFile(path.join(rawDir, sha256, 'extracted.md'), 'utf-8');
+        const metaRaw = await fs.readFile(path.join(rawDir, sha256, 'meta.json'), 'utf-8');
+        const meta = JSON.parse(metaRaw) as { title: string };
+        const extractedHash = hashContent(extracted);
+        const entry = manifest[sha256];
+        const alreadyCompiled = !!entry?.compiledAt;
+        const isUnchanged = alreadyCompiled && entry?.extractedHash === extractedHash;
+
+        if (!opts.force && isUnchanged) continue;
+
+        toCompile.push({ sha256, extracted, extractedHash, meta });
+      } catch {
+        // Skip malformed entries
       }
     }
+
+    if (toCompile.length === 0) {
+      opts.logger?.info('compile.noop', { rawDirs: rawDirs.length });
+      opts.logger?.stepEnd('compile.init', { articlesWritten: 0, rawProcessed: 0 });
+      return { articlesWritten: 0, articlesSkipped: rawDirs.length, rawProcessed: 0 };
+    }
+
+    const articlesDir = path.join(root, '.lore', 'wiki', 'articles');
+    await fs.mkdir(articlesDir, { recursive: true });
+
+    let articlesWritten = 0;
+    let processedCount = 0;
+    const total = toCompile.length;
+
+    for (let i = 0; i < toCompile.length;) {
+      let batchSize = Math.min(BATCH_SIZE, toCompile.length - i);
+      let batchSucceeded = false;
+
+      while (!batchSucceeded) {
+        const batch = toCompile.slice(i, i + batchSize);
+        opts.logger?.stepStart('compile.batch', {
+          offset: i,
+          batchSize,
+        });
+
+        try {
+          const written = await compileBatch(cwd, batch, articlesDir, articlesWritten, manifest, manifestPath, opts.logger);
+          articlesWritten += written;
+          processedCount += batch.length;
+          i += batch.length;
+          opts.onProgress?.(processedCount, total);
+          opts.logger?.progress('compile.progress', processedCount, total, { lastBatchSize: batch.length });
+          opts.logger?.stepEnd('compile.batch', { written });
+          batchSucceeded = true;
+        } catch (error) {
+          opts.logger?.error('compile.batch', error, { offset: i, batchSize });
+          const canRetry = error instanceof RetryableCompileError && batchSize > 1;
+          if (!canRetry) {
+            throw error;
+          }
+          const nextBatchSize = Math.max(1, Math.floor(batchSize / 2));
+          opts.logger?.retry('compile.batch.retry', {
+            reason: error.message,
+            previousBatchSize: batchSize,
+            nextBatchSize,
+          });
+          batchSize = Math.max(1, Math.floor(batchSize / 2));
+        }
+      }
+    }
+
+    // Rebuild index after compile
+    opts.logger?.stepStart('compile.reindex');
+    await rebuildIndex(cwd);
+    opts.logger?.stepEnd('compile.reindex');
+
+    opts.logger?.stepEnd('compile.init', {
+      articlesWritten,
+      rawProcessed: toCompile.length,
+    });
+
+    return {
+      articlesWritten,
+      articlesSkipped: rawDirs.length - toCompile.length,
+      rawProcessed: toCompile.length,
+    };
+  } finally {
+    await releaseCompileLock(root);
   }
-
-  // Rebuild index after compile
-  opts.logger?.stepStart('compile.reindex');
-  await rebuildIndex(cwd);
-  opts.logger?.stepEnd('compile.reindex');
-
-  opts.logger?.stepEnd('compile.init', {
-    articlesWritten,
-    rawProcessed: toCompile.length,
-  });
-
-  return {
-    articlesWritten,
-    articlesSkipped: rawDirs.length - toCompile.length,
-    rawProcessed: toCompile.length,
-  };
 }
 
 interface ParsedArticle {

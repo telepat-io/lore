@@ -180,4 +180,15 @@ describe('compile', () => {
     expect(manifest['e5']?.compiledAt).toBeDefined();
     expect(manifest['e5']?.extractedHash).toBe(sha256(extracted));
   });
+
+  it('fails fast when another compile process holds the lock', async () => {
+    await writeRawEntry(tmpDir, 'f6', 'Locked source', 'locked content');
+    await fs.writeFile(path.join(tmpDir, '.lore', 'compile.lock'), String(process.pid));
+
+    const { compile } = await loadCompile();
+    await expect(compile(tmpDir)).rejects.toThrow('Another compile is already running');
+
+    expect(mockStreamChat).not.toHaveBeenCalled();
+    expect(mockRebuildIndex).not.toHaveBeenCalled();
+  });
 });
