@@ -21,7 +21,7 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 | `get_neighbors(slug)` | Related articles via backlinks |
 | `path(from, to)` | Shortest conceptual path |
 | `graph_stats()` | Article count, backlink density |
-| `lint_summary()` | Orphans, gaps, suggestions |
+| `lint_summary()` | Orphans, gaps, ambiguity, suggestions, diagnostics |
 | `check_duplicate(content?, sha256?)` | Duplicate precheck against `.lore/raw/<sha>` |
 | `list_raw_tags()` | Raw metadata taxonomy summary (formats + top tags) |
 | `rebuild_index(repair?)` | Rebuild search index/backlinks (optional manifest repair) |
@@ -46,6 +46,7 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 - `list_orphans` returns a focused orphan-only view from lint diagnostics for graph maintenance workflows.
 - `list_gaps` returns unresolved conceptual targets so agents can prioritize article creation.
 - `list_ambiguous` returns uncertain articles for review and clarification workflows.
+- `lint_summary` includes a `diagnostics` array with machine-readable findings (`rule`, `severity`, `file`, optional `line`, `message`).
 
 ## Example MCP Calls
 

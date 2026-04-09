@@ -13,6 +13,7 @@ sidebar_position: 3
 | `LORE_CF_TOKEN` | Cloudflare API token for Browser Rendering |
 | `LORE_DISABLE_KEYTAR` | When `true`, disables keychain access and requires env vars for secrets |
 | `LORE_QUERY_NORMALIZE` | When `true`, enables conservative query text cleanup by default |
+| `LORE_LOG_MAX_FILES` | Max number of `.lore/logs/*.jsonl` files to retain before rotation |
 
 ## Query Normalization
 

@@ -13,14 +13,14 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 | `lore` | Launch interactive TUI |
 | `lore init` | Initialize `.lore/` repository |
 | `lore ingest <path\|url>` | Ingest file or URL into `raw/` |
-| `lore compile [--force]` | Compile raw sources into wiki articles |
+| `lore compile [--force]` | Compile changed raw sources into wiki articles (hash-based incremental, lock-guarded) |
 | `lore index [--repair]` | Rebuild FTS5 index + `index.md` (optional manifest repair from `raw/`) |
 | `lore query "<q>" [--no-file-back] [--normalize-question]` | BFS/DFS + LLM Q&A |
 | `lore search "<term>" [--limit N]` | FTS5/BM25 search |
 | `lore path "<A>" "<B>"` | Shortest path between articles |
 | `lore explain "<concept>"` | Deep-dive on a concept |
-| `lore lint` | Wiki health checks |
-| `lore watch` | Watch `raw/` for changes |
+| `lore lint` | Wiki health checks + structured diagnostics |
+| `lore watch` | Watch `raw/` and `wiki/` and auto-compile raw changes |
 | `lore angela [install\|run]` | Git commit capture |
 | `lore export <format> [--out dir]` | Export wiki |
 | `lore mcp` | Start MCP server |
@@ -32,8 +32,20 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 - `--json`: structured machine output on stdout.
 - human mode: operational summaries on stderr; primary text output on stdout where relevant.
 - `lore ingest --json`: includes duplicate indicator when content already exists.
+- `lore compile`: uses hash-based incremental compile, skipping unchanged extracted content via `manifest.json` `extractedHash` values.
+- `lore compile --force`: bypasses hash skipping and recompiles all valid raw entries.
+- `lore compile`: guarded by `.lore/compile.lock` to prevent concurrent runs.
 - `lore index --repair`: reconstructs missing manifest entries before rebuild.
+- `lore lint --json`: includes line-aware `diagnostics[]` entries with `rule`, `severity`, `file`, optional `line`, and `message`.
+- `lore watch`: debounces raw changes, runs compile automatically, and queues one additional pass when changes land during compile.
 - `lore query --normalize-question`: conservative typo cleanup while preserving technical tokens.
+
+Guide links:
+
+- `lore compile`: [Compiling Your Wiki](../guides/compiling-your-wiki.md)
+- `lore lint`: [Linting and Health](../guides/linting-and-health.md)
+- `lore watch`: [Compiling Your Wiki](../guides/compiling-your-wiki.md)
+- `lore mcp`: [MCP Server](../guides/mcp-server.md)
 
 Examples:
 
@@ -80,6 +92,7 @@ Notes:
 ## Notes for Automation
 
 - Prefer `--json` for scripting.
+- Prefer `lore lint --json` and treat `diagnostics` `severity=error` findings as hard failures.
 - For deterministic maintenance pipelines, run in this order:
 	- `lore ingest ...`
 	- `lore compile`

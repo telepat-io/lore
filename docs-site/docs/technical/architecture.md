@@ -14,17 +14,21 @@ sidebar_position: 1
 Supporting state lives in `.lore/`:
 
 - `raw/` normalized ingest artifacts keyed by content hash
-- `manifest.json` source-to-raw tracking
-- `lore.sqlite` FTS/backlink database
+- `manifest.json` source-to-raw tracking, compile timestamps, extracted hashes
+- `wiki/concepts.json` normalized concept metadata generated after compile
+- `db.sqlite` FTS/backlink database
+- `compile.lock` active compile mutex file
 
 ## 4-Phase Pipeline
 
 1. **Ingest** -- `raw/` populated with `extracted.md` + `meta.json`
-2. **Compile** -- `wiki/articles/` written, backlinks woven
+2. **Compile** -- `wiki/articles/` written, backlinks woven, `wiki/concepts.json` regenerated
 3. **Query** -- Q&A via BFS/DFS traversal, filed to `derived/qa/`
-4. **Lint** -- orphans, gaps, ambiguous claims surfaced
+4. **Lint** -- orphans, gaps, ambiguous claims, and line-aware diagnostics surfaced
 
 Operationally, these phases are idempotent and can be re-run incrementally.
+
+Compile is hash-incremental by default: unchanged extracted content is skipped based on `manifest.json` `extractedHash` fields.
 
 ## Ingest and Metadata Flow
 

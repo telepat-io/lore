@@ -26,6 +26,11 @@ Inspired by Andrej Karpathy's note on agent memory and continuity: https://x.com
 
 The latest Lore updates focus on making ingestion and maintenance safer, and making MCP automation richer.
 
+- Compile hash tracking: `lore compile` now skips raw entries whose extracted content hash is unchanged, reducing unnecessary LLM work.
+- Compile lock safety: concurrent compile runs are guarded by `.lore/compile.lock` with stale lock recovery.
+- Watch auto-compile coordination: `lore watch` now debounces raw changes, runs compile automatically, and queues one follow-up pass when changes arrive mid-run.
+- Lint diagnostics expansion: `lore lint --json` now returns line-aware diagnostics (`rule`, `severity`, `file`, `line`, `message`) alongside legacy summary arrays.
+- Concept metadata index: compile now writes `.lore/wiki/concepts.json` with canonical titles, aliases, tags, and confidence labels for downstream tooling.
 - Conversation export normalization: common `.json`/`.jsonl` chat exports are auto-detected and transformed into transcript markdown.
 - Metadata enrichment on ingest: local paths generate topical tags and extracted text can add heuristic memory tags.
 - Duplicate-aware ingest: re-ingesting the same source short-circuits against existing `.lore/raw/<sha>/` records.
@@ -147,7 +152,14 @@ lore export <format>       # export wiki artifacts
 lore status                # repository health dashboard
 lore settings              # configure model/provider parameters
 lore mcp                   # run MCP server on stdio
+lore watch                 # watch raw/wiki and auto-compile on raw changes
 ```
+
+Watch behavior:
+
+- `lore watch` debounces rapid raw changes, triggers compile automatically, and emits queue/busy status messages in human mode.
+- While compile is active, wiki-change reindex events are suppressed to avoid duplicate index churn.
+- If another compile process is already active, watch reports a busy state and retries on future changes.
 
 High-signal maintenance workflows:
 
@@ -211,6 +223,45 @@ Compile truncation safety:
 - Lore detects truncated or structurally incomplete compile responses (for example unterminated YAML frontmatter).
 - On detection, Lore retries with smaller batch sizes automatically.
 - If truncation persists at batch size 1, compile fails with an actionable error and does not write partial article files.
+
+Compile incremental behavior:
+
+- Lore stores `extractedHash` per raw entry in `.lore/manifest.json` after successful compile.
+- On the next run, unchanged extracted content is skipped automatically.
+- `lore compile --force` bypasses hash-based skipping and recompiles all valid raw entries.
+
+Compile concurrency guard:
+
+- Lore uses `.lore/compile.lock` to prevent overlapping compile runs.
+- If a lock belongs to a dead process or contains invalid PID payload, Lore reclaims it automatically.
+- If a live compile is running, Lore fails fast with a clear error so automation can retry.
+
+Concept metadata artifact:
+
+- After successful compile + reindex, Lore writes `.lore/wiki/concepts.json`.
+- The file includes `updatedAt` and a deterministic `concepts` array with:
+  - `slug`
+  - `canonical` / `title`
+  - `aliases` (slug alias, conjunction swap alias, acronym alias when applicable)
+  - `tags`
+  - `confidence` (`extracted`, `inferred`, `ambiguous`, `unknown`)
+
+Lint diagnostics:
+
+- `lore lint` now surfaces richer diagnostics while preserving legacy summary counts.
+- `lore lint --json` includes a `diagnostics` array with line-aware entries:
+
+```json
+{
+  "rule": "broken-wikilink",
+  "severity": "error",
+  "file": ".lore/wiki/articles/example.md",
+  "line": 42,
+  "message": "Wiki link target missing-topic has no corresponding article."
+}
+```
+
+- Current diagnostic rules include: `broken-wikilink`, `orphaned-article`, `ambiguous-confidence`, `missing-summary`, `short-page`.
 
 Graph quality guardrail:
 

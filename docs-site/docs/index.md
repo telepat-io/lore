@@ -20,12 +20,24 @@ lore compile
 lore search "your query"
 ```
 
+Continue with:
+
+- [Compiling Your Wiki](./guides/compiling-your-wiki.md)
+- [Linting and Health](./guides/linting-and-health.md)
+- [CLI Reference](./reference/cli-reference.md)
+- [Architecture](./technical/architecture.md)
+
 ## Docs Theme Behavior
 
 The docs site follows your OS/browser color scheme by default (`prefers-color-scheme`).
 
 ## What Is New
 
+- Compile now uses hash-based incremental behavior to skip unchanged extracted content via `manifest.json`.
+- Compile now uses a repository lock (`.lore/compile.lock`) to prevent overlapping runs.
+- Watch mode now auto-compiles raw changes with debounce and queued follow-up pass behavior.
+- Lint now emits line-aware diagnostics in JSON mode alongside orphan/gap/ambiguous summaries.
+- Compile now generates `.lore/wiki/concepts.json` for canonical concept metadata and aliases.
 - Ingest now auto-normalizes supported chat exports (`.json`/`.jsonl`) into transcript markdown.
 - Ingest metadata now includes richer tags (folder-derived and heuristic memory categories).
 - Duplicate ingest short-circuits repeated sources for faster, cleaner pipelines.
