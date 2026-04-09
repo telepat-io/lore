@@ -21,6 +21,15 @@ describe('lintCommand', () => {
       gaps: ['missing-b'],
       ambiguous: ['uncertain-c'],
       suggestedQuestions: ['What is missing b?'],
+      diagnostics: [
+        {
+          rule: 'broken-wikilink',
+          severity: 'error',
+          file: '.lore/wiki/articles/orphan-a.md',
+          line: 2,
+          message: 'Broken link',
+        },
+      ],
     });
   });
 
@@ -49,6 +58,7 @@ describe('lintCommand', () => {
     await lintCommand({});
 
     expect(String(stderrSpy.mock.calls[0]?.[0] ?? '')).toContain('Orphans: 1, Gaps: 1, Ambiguous: 1');
+    expect(String(stderrSpy.mock.calls[1]?.[0] ?? '')).toContain('Diagnostics: 1 (1 errors, 0 warnings)');
     expect(String(stdoutSpy.mock.calls[0]?.[0] ?? '')).toContain('? What is missing b?');
   });
 });
