@@ -25,7 +25,7 @@ describe('initCommand', () => {
     await initCommand({});
 
     expect(mockInitRepo).toHaveBeenCalledTimes(1);
-    expect(String(mockInitRepo.mock.calls[0]?.[0] ?? '')).toContain('/Users/user/projects/Telepat/lore');
+    expect(mockInitRepo.mock.calls[0]?.[0]).toBe(process.cwd());
   });
 
   it('outputs JSON when --json flag set', async () => {

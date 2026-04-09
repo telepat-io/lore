@@ -45,7 +45,7 @@ describe('compileCommand', () => {
     await compileCommand({});
 
     expect(mockCompile).toHaveBeenCalledTimes(1);
-    expect(String(mockCompile.mock.calls[0]?.[0] ?? '')).toContain('/Users/user/projects/Telepat/lore');
+    expect(mockCompile.mock.calls[0]?.[0]).toBe(process.cwd());
     expect(mockCompile.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ force: false }));
   });
 
