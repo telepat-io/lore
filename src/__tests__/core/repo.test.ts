@@ -57,6 +57,17 @@ describe('initRepo', () => {
     const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
     expect(config.model).toBe('custom');
   });
+
+  it('does not overwrite existing manifest', async () => {
+    await initRepo(tmpDir);
+    const manifestPath = path.join(tmpDir, '.lore', 'manifest.json');
+    await fs.writeFile(manifestPath, JSON.stringify({ keep: { compiledAt: '2026-04-09T00:00:00Z' } }));
+
+    await initRepo(tmpDir);
+
+    const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8')) as Record<string, { compiledAt?: string }>;
+    expect(manifest['keep']?.compiledAt).toBe('2026-04-09T00:00:00Z');
+  });
 });
 
 describe('findRepo', () => {
@@ -125,5 +136,23 @@ describe('getStatus', () => {
     await fs.writeFile(path.join(tmpDir, '.lore', 'manifest.json'), JSON.stringify(manifest));
     const status = await getStatus(tmpDir);
     expect(status.lastCompile).toBe('2024-01-02T00:00:00Z');
+  });
+
+  it('returns null lastCompile when manifest is invalid JSON', async () => {
+    await initRepo(tmpDir);
+    await fs.writeFile(path.join(tmpDir, '.lore', 'manifest.json'), '{broken-json');
+
+    const status = await getStatus(tmpDir);
+    expect(status.lastCompile).toBeNull();
+  });
+
+  it('gracefully handles missing raw/articles directories', async () => {
+    await initRepo(tmpDir);
+    await fs.rm(path.join(tmpDir, '.lore', 'raw'), { recursive: true, force: true });
+    await fs.rm(path.join(tmpDir, '.lore', 'wiki', 'articles'), { recursive: true, force: true });
+
+    const status = await getStatus(tmpDir);
+    expect(status.rawCount).toBe(0);
+    expect(status.articleCount).toBe(0);
   });
 });

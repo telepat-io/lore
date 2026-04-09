@@ -142,6 +142,35 @@ describe('parseJson', () => {
     expect(md).toContain('Sure. Summary complete.');
   });
 
+  it('ignores unsupported roles while still forming transcript from valid user/assistant turns', () => {
+    const input = JSON.stringify([
+      { role: 'system', content: 'System setup message' },
+      { role: 'user', content: 'Actual question' },
+      { role: 'assistant', content: 'Actual answer' },
+    ]);
+
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> Actual question');
+    expect(md).toContain('Actual answer');
+    expect(md).not.toContain('System setup message');
+  });
+
+  it('skips role messages whose content is non-text primitives', () => {
+    const input = JSON.stringify([
+      { role: 'user', content: 123 },
+      { role: 'assistant', content: true },
+      { role: 'user', content: 'real prompt' },
+      { role: 'assistant', content: 'real answer' },
+    ]);
+
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> real prompt');
+    expect(md).toContain('real answer');
+    expect(md).not.toContain('123');
+  });
+
   it('handles chatgpt mapping with assistant-only parts by falling back', () => {
     const input = JSON.stringify({
       mapping: {
@@ -238,5 +267,49 @@ describe('parseJson', () => {
     const md = parseJson(input);
     expect(md).not.toContain('# Conversation Transcript');
     expect(md).toContain('mapping');
+  });
+
+  it('falls back when chatgpt mapping content parts are invalid', () => {
+    const input = JSON.stringify({
+      mapping: {
+        root: { id: 'root', parent: null, message: null, children: ['u1'] },
+        u1: {
+          id: 'u1',
+          parent: 'root',
+          message: {
+            author: { role: 'user' },
+            content: { parts: ['Question text'] },
+          },
+          children: ['a1'],
+        },
+        a1: {
+          id: 'a1',
+          parent: 'u1',
+          message: {
+            author: { role: 'assistant' },
+            content: { parts: 'not-an-array' },
+          },
+          children: [],
+        },
+      },
+    });
+
+    const md = parseJson(input);
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('mapping');
+  });
+
+  it('formats consecutive user turns when assistant reply is delayed', () => {
+    const input = JSON.stringify([
+      { role: 'user', content: 'first question' },
+      { role: 'user', content: 'follow up before answer' },
+      { role: 'assistant', content: 'combined answer' },
+    ]);
+
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> first question');
+    expect(md).toContain('> follow up before answer');
+    expect(md).toContain('combined answer');
   });
 });

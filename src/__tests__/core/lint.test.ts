@@ -133,4 +133,69 @@ Hi.
       }),
     ]));
   });
+
+  it('ignores non-sluggable wikilinks when generating broken-link diagnostics', async () => {
+    const dir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(path.join(dir, 'symbols.md'), '# Symbols\n\nSee [[!!!]] and [[???]].');
+    await rebuildIndex(tmpDir);
+
+    const result = await lintWiki(tmpDir);
+    expect(result.diagnostics.find(d => d.rule === 'broken-wikilink')).toBeUndefined();
+  });
+
+  it('uses line 1 for short-page diagnostics when frontmatter is absent', async () => {
+    const dir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(path.join(dir, 'plain-short.md'), '# Plain\n\nYo');
+    await rebuildIndex(tmpDir);
+
+    const result = await lintWiki(tmpDir);
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        rule: 'short-page',
+        file: '.lore/wiki/articles/plain-short.md',
+        line: 1,
+      }),
+    ]));
+  });
+
+  it('does not emit short-page diagnostic for empty body content', async () => {
+    const dir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(path.join(dir, 'empty-body.md'), `---
+title: Empty Body
+summary: Has summary but no body
+---
+`);
+    await rebuildIndex(tmpDir);
+
+    const result = await lintWiki(tmpDir);
+    expect(result.diagnostics.find(d => d.file === '.lore/wiki/articles/empty-body.md' && d.rule === 'short-page')).toBeUndefined();
+  });
+
+  it('sorts diagnostics by severity then file then line', async () => {
+    const dir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(path.join(dir, 'alpha.md'), '# Alpha\n\nSee [[Missing Zeta]].\n\nSee [[Missing Beta]].');
+    await fs.writeFile(path.join(dir, 'beta.md'), `---
+title: Beta
+summary: Present
+confidence: ambiguous
+---
+
+# Beta
+
+This body is intentionally long enough to avoid short-page diagnostics and only test sort ordering output.
+`);
+    await rebuildIndex(tmpDir);
+
+    const result = await lintWiki(tmpDir);
+    const alphaBroken = result.diagnostics.filter(d => d.file === '.lore/wiki/articles/alpha.md' && d.rule === 'broken-wikilink');
+    expect(alphaBroken).toHaveLength(2);
+    expect((alphaBroken[0]?.line ?? 0)).toBeLessThan(alphaBroken[1]?.line ?? 0);
+
+    // Errors should be sorted before warnings globally.
+    const firstWarningIdx = result.diagnostics.findIndex(d => d.severity === 'warning');
+    const lastErrorIdx = result.diagnostics.map(d => d.severity).lastIndexOf('error');
+    expect(lastErrorIdx).toBeGreaterThanOrEqual(0);
+    expect(firstWarningIdx).toBeGreaterThanOrEqual(0);
+    expect(lastErrorIdx).toBeLessThan(firstWarningIdx);
+  });
 });

@@ -42,16 +42,6 @@ function toSlug(input: string): string {
     .replace(/\s+/g, '-');
 }
 
-function lineOf(content: string, pattern: RegExp): number | undefined {
-  const lines = content.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    if (pattern.test(lines[i] ?? '')) {
-      return i + 1;
-    }
-  }
-  return undefined;
-}
-
 function extractLinks(content: string): LinkRef[] {
   const refs: LinkRef[] = [];
   const lines = content.split('\n');
@@ -152,12 +142,15 @@ export async function lintWiki(cwd: string): Promise<LintResult> {
     for (const article of articles) {
       if (article.frontmatter) {
         if (/confidence:\s*ambiguous/i.test(article.frontmatter)) {
+          const confidenceLine = article.content
+            .split('\n')
+            .findIndex(line => /confidence:\s*ambiguous/i.test(line)) + 1;
           ambiguous.push(article.slug);
           diagnostics.push({
             rule: 'ambiguous-confidence',
             severity: 'warning',
             file: path.join('.lore', 'wiki', 'articles', article.file),
-            line: lineOf(article.content, /confidence:\s*ambiguous/i),
+            line: confidenceLine,
             message: `Article ${article.slug} is marked as ambiguous confidence.`,
           });
         }
@@ -179,7 +172,7 @@ export async function lintWiki(cwd: string): Promise<LintResult> {
           rule: 'short-page',
           severity: 'warning',
           file: path.join('.lore', 'wiki', 'articles', article.file),
-          line: article.frontmatter ? bodyStartLine(article.content) : 1,
+          line: bodyStartLine(article.content),
           message: `Article ${article.slug} body is short (${trimmedBody.length} chars).`,
         });
       }

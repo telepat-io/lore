@@ -253,6 +253,35 @@ describe('renderSettings', () => {
     expect(output).toContain('Settings unchanged.');
   });
 
+  it('handles interactive flow when app exits without onDone callback', async () => {
+    const configDir = path.join(tmpDir, 'config');
+    mockLoadSecrets.mockResolvedValue({
+      openrouterApiKey: null,
+      replicateApiToken: null,
+      cloudflareToken: null,
+    });
+    mockRequireRepo.mockRejectedValue(new Error('not repo'));
+
+    jest.unstable_mockModule('react', () => ({
+      createElement: (_component: unknown, props: Record<string, unknown>) => ({ props }),
+    }));
+    jest.unstable_mockModule('ink', () => ({
+      render: () => ({ waitUntilExit: async () => undefined }),
+    }));
+    jest.unstable_mockModule('../../ui/SettingsCliFlow.js', () => ({
+      SettingsCliFlow: () => null,
+    }));
+
+    setTty(true, true);
+    const writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const { renderSettings } = await loadConfigModule(configDir);
+
+    await renderSettings();
+
+    const output = writeSpy.mock.calls.map((call) => String(call[0])).join('');
+    expect(output).toContain('Settings unchanged.');
+  });
+
   it('applies interactive global and repo updates', async () => {
     const configDir = path.join(tmpDir, 'config');
     const repoDir = path.join(tmpDir, 'repo');

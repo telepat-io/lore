@@ -82,6 +82,12 @@ describe('search', () => {
     expect(results.length).toBeGreaterThan(0);
     expect(results.some(r => r.slug === 'knowledge-management')).toBe(true);
   });
+
+  it('returns empty array when term sanitizes to empty FTS query', async () => {
+    await seedArticles();
+    const results = await search(tmpDir, '!!! ???');
+    expect(results).toEqual([]);
+  });
 });
 
 describe('findPath', () => {
@@ -105,5 +111,24 @@ describe('findPath', () => {
     const result = await findPath(tmpDir, 'backlinks', 'backlinks');
     expect(result.path).toEqual(['backlinks']);
     expect(result.hops).toBe(0);
+  });
+
+  it('normalizes slug-like inputs before traversing graph', async () => {
+    await seedArticles();
+    const result = await findPath(tmpDir, 'Knowledge Management', 'Search Engine!');
+    expect(result.path[0]).toBe('knowledge-management');
+    expect(result.path[result.path.length - 1]).toBe('search-engine');
+    expect(result.hops).toBeGreaterThan(0);
+  });
+
+  it('returns no path when nodes are disconnected', async () => {
+    await seedArticles();
+    const dir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(path.join(dir, 'isolated.md'), '# Isolated\n\nNo links.');
+    await rebuildIndex(tmpDir);
+
+    const result = await findPath(tmpDir, 'isolated', 'search-engine');
+    expect(result.path).toEqual([]);
+    expect(result.hops).toBe(-1);
   });
 });
