@@ -6,6 +6,7 @@ import { rebuildIndex } from './index.js';
 import { type RunLogger } from './logger.js';
 import { hashContent } from '../utils/hash.js';
 import { acquireCompileLock, releaseCompileLock } from './lock.js';
+import { writeConceptsIndex } from './concepts.js';
 
 export interface CompileOptions {
   force?: boolean;
@@ -168,6 +169,10 @@ export async function compile(cwd: string, opts: CompileOptions = {}): Promise<C
     opts.logger?.stepStart('compile.reindex');
     await rebuildIndex(cwd);
     opts.logger?.stepEnd('compile.reindex');
+
+    opts.logger?.stepStart('compile.concepts');
+    const conceptsIndex = await writeConceptsIndex(root);
+    opts.logger?.stepEnd('compile.concepts', { concepts: conceptsIndex.concepts.length });
 
     opts.logger?.stepEnd('compile.init', {
       articlesWritten,

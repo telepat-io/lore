@@ -98,6 +98,14 @@ describe('compile', () => {
     await expect(fs.access(path.join(tmpDir, '.lore', 'wiki', 'articles', 'beta-concept.md'))).resolves.toBeUndefined();
     await expect(fs.access(path.join(tmpDir, '.lore', 'wiki', 'articles', 'untitled.md'))).rejects.toThrow();
 
+    const conceptsRaw = await fs.readFile(path.join(tmpDir, '.lore', 'wiki', 'concepts.json'), 'utf-8');
+    const concepts = JSON.parse(conceptsRaw) as { concepts: Array<{ slug: string; canonical: string; aliases: string[] }> };
+    expect(concepts.concepts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ slug: 'alpha-concept', canonical: 'Alpha Concept' }),
+      expect.objectContaining({ slug: 'beta-concept', canonical: 'Beta Concept' }),
+    ]));
+    expect(concepts.concepts.find(c => c.slug === 'alpha-concept')?.aliases).toContain('alpha-concept');
+
     const manifestRaw = await fs.readFile(path.join(tmpDir, '.lore', 'manifest.json'), 'utf-8');
     const manifest = JSON.parse(manifestRaw) as Record<string, { compiledAt?: string }>;
     expect(manifest['a1']?.compiledAt).toBeDefined();
