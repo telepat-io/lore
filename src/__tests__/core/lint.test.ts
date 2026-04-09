@@ -69,4 +69,27 @@ This claim is not well-supported.
     const result = await lintWiki(tmpDir);
     expect(result.suggestedQuestions.length).toBeGreaterThan(0);
   });
+
+  it('handles missing articles directory gracefully', async () => {
+    const articlesDir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.rm(articlesDir, { recursive: true, force: true });
+
+    const result = await lintWiki(tmpDir);
+    expect(result.orphans).toEqual([]);
+    expect(result.gaps).toEqual([]);
+    expect(result.ambiguous).toEqual([]);
+  });
+
+  it('skips non-orphans, existing targets, and non-ambiguous frontmatter', async () => {
+    const dir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(path.join(dir, 'article-a.md'), '# A\n\nSee [[Article B]].');
+    await fs.writeFile(path.join(dir, 'article-b.md'), `---\ntitle: B\nconfidence: high\n---\n\n# B\n\nSee [[Article C]].`);
+    await fs.writeFile(path.join(dir, 'article-c.md'), '# C\n\nSee [[Article A]].');
+    await rebuildIndex(tmpDir);
+
+    const result = await lintWiki(tmpDir);
+    expect(result.orphans).toEqual([]);
+    expect(result.gaps).toEqual([]);
+    expect(result.ambiguous).toEqual([]);
+  });
 });

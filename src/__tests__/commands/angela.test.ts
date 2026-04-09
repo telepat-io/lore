@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockInstallAngelaHook = jest.fn();
-const mockRunAngela = jest.fn();
+const mockInstallAngelaHook = jest.fn<(...args: any[]) => any>();
+const mockRunAngela = jest.fn<(...args: any[]) => any>();
 
 async function loadAngelaCommand() {
   jest.resetModules();

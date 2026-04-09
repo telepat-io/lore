@@ -56,4 +56,43 @@ describe('RunLogger', () => {
       }
     }
   });
+
+  it('records progress, retry, info, and unknown-error events', async () => {
+    const logger = await RunLogger.create(tmpDir, 'query');
+    logger.progress('query.fetch', 1, 3, { source: 'db' });
+    logger.retry('query.fetch', { attempt: 2 });
+    logger.info('query.fetch', { detail: 'continuing' });
+    logger.error('query.fetch', 'plain-string-error', { code: 'E_UNKNOWN' });
+    await logger.close('error', { status: 'failed' });
+
+    const raw = await fs.readFile(logger.logPath, 'utf-8');
+    const lines = raw
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as { event: string; error?: { name: string; message: string } });
+
+    expect(lines.some((line) => line.event === 'progress')).toBe(true);
+    expect(lines.some((line) => line.event === 'retry')).toBe(true);
+    expect(lines.some((line) => line.event === 'info')).toBe(true);
+    expect(lines.some((line) => line.event === 'error' && line.error?.name === 'UnknownError')).toBe(true);
+  });
+
+  it('uses default max logs when LORE_LOG_MAX_FILES is invalid', async () => {
+    const previousValue = process.env['LORE_LOG_MAX_FILES'];
+    process.env['LORE_LOG_MAX_FILES'] = '0';
+
+    try {
+      const logger = await RunLogger.create(tmpDir, 'ingest');
+      logger.stepEnd('never-started');
+      await logger.close('ok');
+
+      await expect(fs.access(logger.logPath)).resolves.toBeUndefined();
+    } finally {
+      if (previousValue === undefined) {
+        delete process.env['LORE_LOG_MAX_FILES'];
+      } else {
+        process.env['LORE_LOG_MAX_FILES'] = previousValue;
+      }
+    }
+  });
 });

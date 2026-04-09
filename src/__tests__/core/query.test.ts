@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockRequireRepo = jest.fn();
-const mockOpenDb = jest.fn();
-const mockStreamChat = jest.fn();
-const mockBuildSafeFtsQuery = jest.fn();
+const mockRequireRepo = jest.fn<(...args: any[]) => any>();
+const mockOpenDb = jest.fn<(...args: any[]) => any>();
+const mockStreamChat = jest.fn<(...args: any[]) => any>();
+const mockBuildSafeFtsQuery = jest.fn<(...args: any[]) => any>();
 
-const mockReadFile = jest.fn();
-const mockMkdir = jest.fn();
-const mockWriteFile = jest.fn();
+const mockReadFile = jest.fn<(...args: any[]) => any>();
+const mockMkdir = jest.fn<(...args: any[]) => any>();
+const mockWriteFile = jest.fn<(...args: any[]) => any>();
 
 function createDbMock() {
   return {
-    close: jest.fn(),
+    close: jest.fn<(...args: any[]) => any>(),
     prepare: jest.fn((sql: string) => {
       if (sql.includes('SELECT slug FROM fts WHERE fts MATCH') && sql.includes('LIMIT 5')) {
         return { all: jest.fn(() => [{ slug: 'alpha' }]) };

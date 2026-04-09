@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockReadGlobalConfig = jest.fn();
-const mockReadRepoConfig = jest.fn();
-const mockRequireRepo = jest.fn();
-const mockCreate = jest.fn();
-const mockOpenAI = jest.fn();
+const mockReadGlobalConfig = jest.fn<(...args: any[]) => any>();
+const mockReadRepoConfig = jest.fn<(...args: any[]) => any>();
+const mockRequireRepo = jest.fn<(...args: any[]) => any>();
+const mockCreate = jest.fn<(...args: any[]) => any>();
+const mockOpenAI = jest.fn<(...args: any[]) => any>();
 
 async function loadLlmModule() {
   jest.resetModules();

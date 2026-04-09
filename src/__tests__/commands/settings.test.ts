@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockReadGlobalConfig = jest.fn();
-const mockReadRepoConfig = jest.fn();
-const mockRenderSettings = jest.fn();
-const mockSetGlobalSetting = jest.fn();
-const mockUnsetGlobalSetting = jest.fn();
-const mockWriteRepoConfig = jest.fn();
-const mockRequireRepo = jest.fn();
+const mockReadGlobalConfig = jest.fn<(...args: any[]) => any>();
+const mockReadRepoConfig = jest.fn<(...args: any[]) => any>();
+const mockRenderSettings = jest.fn<(...args: any[]) => any>();
+const mockSetGlobalSetting = jest.fn<(...args: any[]) => any>();
+const mockUnsetGlobalSetting = jest.fn<(...args: any[]) => any>();
+const mockWriteRepoConfig = jest.fn<(...args: any[]) => any>();
+const mockRequireRepo = jest.fn<(...args: any[]) => any>();
 
 async function loadSettingsCommands() {
   jest.resetModules();

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockRequireRepo = jest.fn();
-const mockRebuildIndex = jest.fn();
-const mockWatchFactory = jest.fn();
+const mockRequireRepo = jest.fn<(...args: any[]) => any>();
+const mockRebuildIndex = jest.fn<(...args: any[]) => any>();
+const mockWatchFactory = jest.fn<(...args: any[]) => any>();
 
 let eventHandlers: Record<string, (event: string, filePath: string) => void> = {};
-const mockWatcherClose = jest.fn();
+const mockWatcherClose = jest.fn<(...args: any[]) => any>();
 
 async function loadWatchModule() {
   jest.resetModules();

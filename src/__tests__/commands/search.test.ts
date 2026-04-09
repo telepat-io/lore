@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockSearch = jest.fn();
+const mockSearch = jest.fn<(...args: any[]) => any>();
 
 async function loadSearchCommand() {
   jest.resetModules();

@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockRequireRepo = jest.fn();
-const mockLintWiki = jest.fn();
-const mockRebuildIndex = jest.fn();
-const mockSearch = jest.fn();
-const mockFindPath = jest.fn();
-const mockQuery = jest.fn();
+const mockRequireRepo = jest.fn<(...args: any[]) => any>();
+const mockLintWiki = jest.fn<(...args: any[]) => any>();
+const mockRebuildIndex = jest.fn<(...args: any[]) => any>();
+const mockSearch = jest.fn<(...args: any[]) => any>();
+const mockFindPath = jest.fn<(...args: any[]) => any>();
+const mockQuery = jest.fn<(...args: any[]) => any>();
 
-const mockConnect = jest.fn();
+const mockConnect = jest.fn<(...args: any[]) => any>();
 
 let listHandler: ((request: unknown) => Promise<unknown>) | undefined;
 let callHandler: ((request: unknown) => Promise<unknown>) | undefined;

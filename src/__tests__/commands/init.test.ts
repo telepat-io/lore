@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockInitRepo = jest.fn();
+const mockInitRepo = jest.fn<(...args: any[]) => any>();
 
 async function loadInitCommand() {
   jest.resetModules();

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockQuery = jest.fn();
-const mockLoggerClose = jest.fn();
-const mockLoggerError = jest.fn();
+const mockQuery = jest.fn<(...args: any[]) => any>();
+const mockLoggerClose = jest.fn<(...args: any[]) => any>();
+const mockLoggerError = jest.fn<(...args: any[]) => any>();
 
 async function loadQueryCommand() {
   jest.resetModules();
@@ -13,7 +13,7 @@ async function loadQueryCommand() {
 
   jest.unstable_mockModule('../../core/logger.js', () => ({
     RunLogger: {
-      create: jest.fn().mockResolvedValue({
+      create: jest.fn<(...args: any[]) => any>().mockResolvedValue({
         runId: 'run-query',
         logPath: '/tmp/query.jsonl',
         close: mockLoggerClose,

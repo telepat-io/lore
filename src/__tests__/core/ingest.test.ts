@@ -178,4 +178,85 @@ describe('ingest', () => {
 
     expect(meta.tags).toEqual(expect.arrayContaining(['decision', 'preference', 'problem', 'milestone']));
   });
+
+  it('routes marker-supported extensions to Marker parser', async () => {
+    const pdfFile = path.join(tmpDir, 'slides.pdf');
+    await fs.writeFile(pdfFile, 'pdf-placeholder');
+
+    const parseWithMarkerMock = jest.fn<() => Promise<string>>().mockResolvedValue('# Marker Output');
+    jest.resetModules();
+    jest.unstable_mockModule('../../utils/parsers/marker.js', () => ({ parseWithMarker: parseWithMarkerMock }));
+
+    const ingestModule = await import('../../core/ingest.js');
+    const result = await ingestModule.ingest(tmpDir, pdfFile);
+
+    expect(result.format).toBe('pdf');
+    expect(parseWithMarkerMock).toHaveBeenCalled();
+  });
+
+  it('routes image extensions to vision parser', async () => {
+    const imageFile = path.join(tmpDir, 'diagram.png');
+    await fs.writeFile(imageFile, 'png-placeholder');
+
+    const parseImageMock = jest.fn<() => Promise<string>>().mockResolvedValue('# Image Output');
+    jest.resetModules();
+    jest.unstable_mockModule('../../utils/parsers/vision.js', () => ({ parseImage: parseImageMock }));
+
+    const ingestModule = await import('../../core/ingest.js');
+    const result = await ingestModule.ingest(tmpDir, imageFile);
+
+    expect(result.format).toBe('png');
+    expect(parseImageMock).toHaveBeenCalled();
+  });
+
+  it('falls back to text for unknown file extensions', async () => {
+    const blobFile = path.join(tmpDir, 'payload.xyz');
+    await fs.writeFile(blobFile, 'opaque content');
+
+    const result = await ingest(tmpDir, blobFile);
+    expect(result.format).toBe('xyz');
+  });
+
+  it('ignores incomplete existing meta and re-ingests content', async () => {
+    const mdFile = path.join(tmpDir, 'broken-meta.md');
+    await fs.writeFile(mdFile, '# Broken Meta\n\nContent');
+
+    const first = await ingest(tmpDir, mdFile);
+    const rawDir = path.join(tmpDir, '.lore', 'raw', first.sha256);
+    await fs.writeFile(path.join(rawDir, 'meta.json'), JSON.stringify({ format: 'md' }));
+
+    const second = await ingest(tmpDir, mdFile);
+    expect(second.duplicate).toBeUndefined();
+    expect(second.sha256).toBe(first.sha256);
+  });
+
+  it('caps merged inferred tags at 12 items', async () => {
+    const nestedDir = path.join(
+      tmpDir,
+      'alpha',
+      'bravo',
+      'charlie',
+      'delta',
+      'echo',
+      'foxtrot',
+      'golf',
+      'hotel',
+      'india',
+      'juliet',
+    );
+    await fs.mkdir(nestedDir, { recursive: true });
+
+    const mdFile = path.join(nestedDir, 'tags.md');
+    await fs.writeFile(
+      mdFile,
+      '# Notes\n\nWe decided this approach and I prefer it. There is an error, but it works and shipped as a milestone.',
+    );
+
+    const result = await ingest(tmpDir, mdFile);
+    const meta = JSON.parse(await fs.readFile(path.join(tmpDir, '.lore', 'raw', result.sha256, 'meta.json'), 'utf-8')) as {
+      tags: string[];
+    };
+
+    expect(meta.tags.length).toBeLessThanOrEqual(12);
+  });
 });

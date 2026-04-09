@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockExplain = jest.fn();
+const mockExplain = jest.fn<(...args: any[]) => any>();
 
 async function loadExplainCommand() {
   jest.resetModules();

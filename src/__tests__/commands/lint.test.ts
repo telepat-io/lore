@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockLintWiki = jest.fn();
+const mockLintWiki = jest.fn<(...args: any[]) => any>();
 
 async function loadLintCommand() {
   jest.resetModules();

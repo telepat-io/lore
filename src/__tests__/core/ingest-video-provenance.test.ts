@@ -4,7 +4,7 @@ import path from 'path';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { initRepo } from '../../core/repo.js';
 
-const mockParseVideo = jest.fn();
+const mockParseVideo = jest.fn<(...args: any[]) => any>();
 
 async function loadIngestWithVideoMock() {
   jest.resetModules();

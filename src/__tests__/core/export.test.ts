@@ -20,6 +20,10 @@ tags: [core]
 
 # Concept A
 
+### Deep Dive
+
+- First bullet
+
 This is about concept A. See [[Concept B]].
 `);
   await fs.writeFile(path.join(dir, 'concept-b.md'), `---
@@ -89,6 +93,14 @@ describe('exportWiki', () => {
     expect(JSON.parse(pkg).dependencies.astro).toBeTruthy();
     const docs = await fs.readdir(path.join(result.outputPath, 'src', 'content', 'docs'));
     expect(docs.length).toBeGreaterThan(0);
+  });
+
+  it('web: works even when index.md is missing', async () => {
+    await fs.rm(path.join(tmpDir, '.lore', 'wiki', 'index.md'), { force: true });
+
+    const result = await exportWiki(tmpDir, 'web');
+    expect(result.format).toBe('web');
+    await expect(fs.access(path.join(result.outputPath, 'package.json'))).resolves.toBeUndefined();
   });
 
   it('respects custom outDir', async () => {

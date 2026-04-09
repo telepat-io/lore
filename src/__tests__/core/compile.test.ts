@@ -3,8 +3,8 @@ import os from 'os';
 import path from 'path';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockStreamChat = jest.fn();
-const mockRebuildIndex = jest.fn();
+const mockStreamChat = jest.fn<(...args: any[]) => any>();
+const mockRebuildIndex = jest.fn<(...args: any[]) => any>();
 
 async function loadCompile() {
   jest.resetModules();

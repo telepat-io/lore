@@ -130,4 +130,29 @@ Content here.
     const manifest = JSON.parse(await fs.readFile(path.join(tmpDir, '.lore', 'manifest.json'), 'utf-8')) as Record<string, unknown>;
     expect(manifest[sha]).toBeTruthy();
   });
+
+  it('does not repair manifest entries that already exist', async () => {
+    const sha = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const rawEntryDir = path.join(tmpDir, '.lore', 'raw', sha);
+    await fs.mkdir(rawEntryDir, { recursive: true });
+    await fs.writeFile(path.join(tmpDir, '.lore', 'manifest.json'), JSON.stringify({ [sha]: { mtime: 'x' } }, null, 2));
+
+    const result = await rebuildIndex(tmpDir, { repair: true });
+    expect(result.repairedManifestEntries).toBe(0);
+  });
+
+  it('filters one-word short tokens and one-character links', async () => {
+    const articlesDir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(path.join(articlesDir, 'short-links.md'), '# Short\n\nDrop [[a]] and [[ab]], keep [[v2]].');
+
+    await rebuildIndex(tmpDir);
+
+    const db = openDb(tmpDir);
+    try {
+      const links = db.prepare('SELECT to_slug FROM links ORDER BY to_slug').all() as { to_slug: string }[];
+      expect(links).toEqual([{ to_slug: 'v2' }]);
+    } finally {
+      db.close();
+    }
+  });
 });

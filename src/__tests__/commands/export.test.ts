@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockExportWiki = jest.fn();
+const mockExportWiki = jest.fn<(...args: any[]) => any>();
 
 async function loadExportCommand() {
   jest.resetModules();

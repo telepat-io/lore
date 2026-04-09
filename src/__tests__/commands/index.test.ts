@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockRebuildIndex = jest.fn();
+const mockRebuildIndex = jest.fn<(...args: any[]) => any>();
 
 async function loadIndexCommand() {
   jest.resetModules();

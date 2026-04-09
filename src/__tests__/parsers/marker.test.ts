@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockRun = jest.fn();
-const mockReplicate = jest.fn();
-const mockReadFile = jest.fn();
+const mockRun = jest.fn<(...args: any[]) => any>();
+const mockReplicate = jest.fn<(...args: any[]) => any>();
+const mockReadFile = jest.fn<(...args: any[]) => any>();
 
 async function loadMarkerModule() {
   jest.resetModules();

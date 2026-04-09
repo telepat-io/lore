@@ -17,7 +17,7 @@ describe('parseUrl', () => {
   });
 
   it('fetches URL via Jina r.jina.ai', async () => {
-    const fetchMock = jest.fn(async () => ({
+    const fetchMock = jest.fn<(...args: any[]) => Promise<any>>(async () => ({
       ok: true,
       text: async () => '# Jina markdown',
     }));
@@ -35,7 +35,7 @@ describe('parseUrl', () => {
     process.env['LORE_CF_TOKEN'] = 'token';
 
     const fetchMock = jest
-      .fn()
+      .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValueOnce({ ok: false, status: 500 })
       .mockResolvedValueOnce({ ok: true, text: async () => '# fallback jina' });
     (globalThis as { fetch?: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
@@ -48,7 +48,11 @@ describe('parseUrl', () => {
   });
 
   it('throws on Jina fetch failure', async () => {
-    const fetchMock = jest.fn(async () => ({ ok: false, status: 502, statusText: 'Bad Gateway' }));
+    const fetchMock = jest.fn<(...args: any[]) => Promise<any>>(async () => ({
+      ok: false,
+      status: 502,
+      statusText: 'Bad Gateway',
+    }));
     (globalThis as { fetch?: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
 
     const { parseUrl } = await import('../../utils/parsers/url.js');
@@ -59,7 +63,7 @@ describe('parseUrl', () => {
     process.env['LORE_CF_ACCOUNT_ID'] = 'acct';
     process.env['LORE_CF_TOKEN'] = 'token';
 
-    const fetchMock = jest.fn(async () => ({
+    const fetchMock = jest.fn<(...args: any[]) => Promise<any>>(async () => ({
       ok: true,
       json: async () => ({ result: { content: '<h1>Hello</h1>' } }),
     }));

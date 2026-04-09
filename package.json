@@ -26,8 +26,8 @@
   "scripts": {
     "build": "tsup src/bin/lore.ts --format esm --dts --clean --out-dir dist",
     "dev": "tsx src/bin/lore.ts",
-    "typecheck": "tsc --noEmit",
-    "lint": "npm run typecheck && eslint src",
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "lint": "npm run typecheck && eslint src e2e",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.js",
     "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.e2e.config.js",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.js --coverage",
@@ -76,6 +76,7 @@
   "devDependencies": {
     "@eslint/js": "^9",
     "@types/better-sqlite3": "^7",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22",
     "@types/react": "^19",
     "eslint": "^9",

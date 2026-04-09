@@ -129,4 +129,114 @@ describe('parseJson', () => {
     expect(md).not.toContain('# Conversation Transcript');
     expect(md).toContain('role');
   });
+
+  it('supports role aliases and array/object text content payloads', () => {
+    const input = JSON.stringify([
+      { role: 'human', content: [{ type: 'text', text: 'Can you summarize?' }, 'Please keep it brief.'] },
+      { role: 'ai', content: { text: 'Sure. Summary complete.' } },
+    ]);
+
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> Can you summarize? Please keep it brief.');
+    expect(md).toContain('Sure. Summary complete.');
+  });
+
+  it('handles chatgpt mapping with assistant-only parts by falling back', () => {
+    const input = JSON.stringify({
+      mapping: {
+        root: { id: 'root', parent: null, message: null, children: ['a1'] },
+        a1: {
+          id: 'a1',
+          parent: 'root',
+          message: {
+            author: { role: 'assistant' },
+            content: { parts: ['Only assistant here'] },
+          },
+          children: [],
+        },
+      },
+    });
+
+    const md = parseJson(input);
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('mapping');
+  });
+
+  it('throws when generic JSONL fallback contains invalid JSON lines', () => {
+    expect(() => parseJson(' {"name": "ok"}\nnot-json-line')).toThrow();
+  });
+
+  it('converts arrays and nested objects in generic json markdown mode', () => {
+    const input = JSON.stringify({
+      list: [1, { nested: true }],
+      flag: false,
+    });
+
+    const md = parseJson(input);
+    expect(md).toContain('list');
+    expect(md).toContain('1.');
+    expect(md).toContain('nested');
+    expect(md).toContain('**flag:** false');
+  });
+
+  it('handles jsonl with blank lines and trims text parts', () => {
+    const lines = [
+      '   ',
+      JSON.stringify({ type: 'human', message: { content: '   first question   ' } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: ' second answer ' }] } }),
+      '',
+    ];
+
+    const md = parseJson(lines.join('\n'));
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> first question');
+    expect(md).toContain('second answer');
+  });
+
+  it('normalizes claude privacy export arrays', () => {
+    const input = JSON.stringify([
+      {
+        chat_messages: [
+          { role: 'human', content: 'Can this parse privacy export?' },
+          { role: 'assistant', content: 'Yes, privacy export parsed.' },
+        ],
+      },
+      { chat_messages: 'invalid-shape' },
+    ]);
+
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> Can this parse privacy export?');
+    expect(md).toContain('Yes, privacy export parsed.');
+  });
+
+  it('falls back when codex jsonl lacks required payload message text', () => {
+    const lines = [
+      JSON.stringify({ type: 'session_meta', session_id: 'abc' }),
+      JSON.stringify({ type: 'event_msg', payload: { type: 'user_message' } }),
+      JSON.stringify({ type: 'event_msg', payload: { type: 'agent_message', message: '' } }),
+    ];
+
+    const md = parseJson(lines.join('\n'));
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('Entry 1');
+  });
+
+  it('handles chatgpt mapping fallback root and non-string children safely', () => {
+    const input = JSON.stringify({
+      mapping: {
+        root: {
+          id: 'root',
+          parent: null,
+          message: { author: { role: 'user' }, content: { parts: ['Question only'] } },
+          children: [42],
+        },
+      },
+    });
+
+    const md = parseJson(input);
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('mapping');
+  });
 });

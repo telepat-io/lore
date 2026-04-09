@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockFindPath = jest.fn();
+const mockFindPath = jest.fn<(...args: any[]) => any>();
 
 async function loadPathCommand() {
   jest.resetModules();

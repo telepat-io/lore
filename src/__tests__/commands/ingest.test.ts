@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockIngest = jest.fn();
-const mockLoggerClose = jest.fn();
-const mockLoggerError = jest.fn();
+const mockIngest = jest.fn<(...args: any[]) => any>();
+const mockLoggerClose = jest.fn<(...args: any[]) => any>();
+const mockLoggerError = jest.fn<(...args: any[]) => any>();
 
 async function loadIngestCommand() {
   jest.resetModules();
@@ -13,7 +13,7 @@ async function loadIngestCommand() {
 
   jest.unstable_mockModule('../../core/logger.js', () => ({
     RunLogger: {
-      create: jest.fn().mockResolvedValue({
+      create: jest.fn<(...args: any[]) => any>().mockResolvedValue({
         runId: 'run-ingest',
         logPath: '/tmp/ingest.jsonl',
         close: mockLoggerClose,

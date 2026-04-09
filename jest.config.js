@@ -39,5 +39,13 @@ export default {
       lines: 80,
       branches: 60,
     },
+    'src/core/**/*.ts': {
+      lines: 90,
+      branches: 80,
+    },
+    'src/utils/**/*.ts': {
+      lines: 90,
+      branches: 80,
+    },
   },
 };
