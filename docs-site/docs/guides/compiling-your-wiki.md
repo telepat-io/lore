@@ -22,6 +22,19 @@ Lore now tracks an `extractedHash` per raw entry in `.lore/manifest.json`.
 
 This keeps repeated compile runs fast and reduces unnecessary token usage.
 
+## Batch Retry Behavior
+
+Compile processes sources in batches (default size 20). If a batch response is retryable (for example truncated model output or invalid article payload), Lore halves the batch size and retries.
+
+| Condition | Behavior |
+|---|---|
+| LLM response truncated | Retry with smaller batch |
+| No parsable articles returned | Retry with smaller batch |
+| Unterminated frontmatter / missing title | Retry with smaller batch |
+| Batch size reaches 1 and still fails | Compile exits with error |
+
+This strategy protects long runs from failing due to a single oversized batch.
+
 ## Compile Lock and Concurrency
 
 Lore guards compile with `.lore/compile.lock` to prevent overlapping runs.
@@ -29,6 +42,8 @@ Lore guards compile with `.lore/compile.lock` to prevent overlapping runs.
 - If another live compile is active, `lore compile` fails fast with an actionable error.
 - Stale or malformed lock payloads are reclaimed automatically.
 - `lore watch` integrates with this behavior and reports busy/queued status during auto-compile loops.
+
+The lock file stores a process ID (PID). If that PID is no longer alive, Lore removes the stale lock and retries acquisition.
 
 ## Index Rebuild and Repair
 
@@ -45,6 +60,8 @@ lore index --repair
 ```
 
 `--repair` reconstructs missing manifest entries from `.lore/raw/` before index rebuild.
+
+Repair only restores missing manifest keys. It does not regenerate broken raw files.
 
 ## Confidence Labels
 
@@ -92,9 +109,37 @@ lore index --repair
 lore lint
 ```
 
+## Watch Mode Interaction
+
+`lore watch` can auto-compile raw changes with debounce and queueing.
+
+- Debounce: raw changes are grouped (default 1 second)
+- If compile is already running, one follow-up pass is queued
+- Wiki article edits trigger reindex directly (without full compile)
+
+```mermaid
+flowchart TD
+	A[Raw change detected] --> B[Debounce window]
+	B --> C{Compile in flight?}
+	C -->|No| D[Run compile]
+	C -->|Yes| E[Queue one follow-up pass]
+	D --> F[Rebuild index + concepts]
+	E --> D
+```
+
+## Troubleshooting Compile Runs
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Frequent retries with shrinking batch size | Content volume too large for one request | Re-run compile and let auto-reduction complete |
+| Lock errors in automation | Another compile process active | Serialize compile jobs and retry later |
+| No new articles written | Incremental hash skipping unchanged entries | Use `lore compile --force` |
+| Index appears out of date after failures | Compile interrupted before index rebuild | Run `lore index --repair` manually |
+
 ## Related Docs
 
 - [Quickstart](../getting-started/quickstart.md)
 - [Linting and Health](./linting-and-health.md)
+- [Troubleshooting](./troubleshooting.md)
 - [CLI Reference](../reference/cli-reference.md)
 - [Architecture](../technical/architecture.md)

@@ -22,6 +22,18 @@ lore ingest <path|url>
 
 All ingested content is stored in `.lore/raw/<sha256>/` with `extracted.md` and `meta.json`.
 
+## Ingest Flow
+
+```mermaid
+flowchart LR
+	A[input path or URL] --> B[format detection]
+	B --> C[format-specific parser]
+	C --> D[markdown normalization]
+	D --> E[hash and duplicate check]
+	E -->|new| F[write raw entry]
+	E -->|duplicate| G[reuse existing entry]
+```
+
 ## Raw Entry Structure
 
 Each raw entry is stored under:
@@ -122,9 +134,9 @@ Extractor provenance:
 
 ## Related References
 
-- Supported formats: `/reference/supported-formats`
-- LLM and parser models: `/reference/llm-models`
-- Credentials and secrets: `/guides/credentials-and-secrets`
+- [Supported Formats](../reference/supported-formats.md)
+- [LLM Models](../reference/llm-models.md)
+- [Credentials and Secrets](./credentials-and-secrets.md)
 
 ## Troubleshooting
 

@@ -304,6 +304,11 @@ Environment notes:
 - Guides: https://docs.telepat.io/lore/guides
 - Reference: https://docs.telepat.io/lore/reference
 - Ingesting content: https://docs.telepat.io/lore/guides/ingesting-content
+- Compiling your wiki: https://docs.telepat.io/lore/guides/compiling-your-wiki
+- Exporting: https://docs.telepat.io/lore/guides/exporting
+- Troubleshooting: https://docs.telepat.io/lore/guides/troubleshooting
+- Best practices: https://docs.telepat.io/lore/guides/best-practices
+- Explain command: https://docs.telepat.io/lore/guides/explain-command
 - LLM models: https://docs.telepat.io/lore/reference/llm-models
 - Issues: https://github.com/telepat-io/lore/issues
 

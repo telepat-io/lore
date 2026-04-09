@@ -16,6 +16,14 @@ Runs health checks on the wiki:
 - **Suggested questions** -- follow-up prompts generated from gaps/orphans/ambiguity
 - **Diagnostics** -- line-aware diagnostics for actionable fixes
 
+## Why Lint Matters
+
+Lint transforms wiki quality issues into a prioritized, machine-readable queue for maintenance.
+
+- catches broken conceptual links early
+- reveals weak coverage and disconnected pages
+- helps drive follow-up compile and content work
+
 ## Diagnostics (JSON)
 
 `lore lint --json` includes a `diagnostics` array while preserving legacy summary arrays.
@@ -39,6 +47,16 @@ Current rules:
 - `ambiguous-confidence` (`warning`)
 - `missing-summary` (`warning`)
 - `short-page` (`warning`)
+
+### Rule Priority Matrix
+
+| Rule | Severity | Typical action |
+|---|---|---|
+| `broken-wikilink` | `error` | Create missing target article or fix link target |
+| `orphaned-article` | `warning` | Add incoming links from related articles |
+| `ambiguous-confidence` | `warning` | Clarify claims and adjust confidence when warranted |
+| `missing-summary` | `warning` | Add frontmatter summary |
+| `short-page` | `warning` | Expand article body with meaningful context |
 
 ## Human Mode Output
 
@@ -64,9 +82,47 @@ lore index --repair
 lore lint --json
 ```
 
+## Suggested Remediation Workflow
+
+1. fix all `broken-wikilink` diagnostics first
+2. resolve high-impact orphans (core architecture concepts)
+3. address ambiguous pages and add summaries
+4. re-run compile/index if content changed substantially
+5. re-run lint until diagnostic trend is decreasing
+
+## Example Fix Patterns
+
+### Broken wikilink
+
+- before: `[[compile-locking-system]]`
+- after: `[[Compile Locking]]` or create the missing article
+
+### Orphaned article
+
+- add backlinks from parent/adjacent concepts
+- ensure article appears in at least one navigation-relevant page
+
+### Missing summary
+
+```yaml
+summary: "Prevents overlapping compile runs and stale output writes."
+```
+
+## Using Lint in Automation
+
+```bash
+lore lint --json > lint.json
+
+# treat errors as blockers in CI scripts
+cat lint.json
+```
+
+For MCP-based maintenance loops, use `lint_summary`, `list_orphans`, `list_gaps`, and `list_ambiguous`.
+
 ## Related Docs
 
 - [Compiling Your Wiki](./compiling-your-wiki.md)
+- [Troubleshooting](./troubleshooting.md)
 - [CLI Reference](../reference/cli-reference.md)
 - [MCP Server](./mcp-server.md)
 - [Architecture](../technical/architecture.md)

@@ -42,10 +42,20 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 
 Guide links:
 
+- `lore init`: [Quickstart](../getting-started/quickstart.md)
+- `lore ingest`: [Ingesting Content](../guides/ingesting-content.md)
 - `lore compile`: [Compiling Your Wiki](../guides/compiling-your-wiki.md)
+- `lore search`: [Searching and Querying](../guides/searching-and-querying.md)
+- `lore query`: [Searching and Querying](../guides/searching-and-querying.md)
+- `lore explain`: [Explain Command](../guides/explain-command.md)
 - `lore lint`: [Linting and Health](../guides/linting-and-health.md)
 - `lore watch`: [Compiling Your Wiki](../guides/compiling-your-wiki.md)
+- `lore export`: [Exporting](../guides/exporting.md)
+- `lore angela`: [Lore Angela](../guides/lore-angela.md)
 - `lore mcp`: [MCP Server](../guides/mcp-server.md)
+- `lore settings`: [Configuration](../guides/configuration.md)
+- troubleshooting workflows: [Troubleshooting](../guides/troubleshooting.md)
+- repository operating patterns: [Best Practices](../guides/best-practices.md)
 
 Examples:
 
@@ -103,4 +113,3 @@ Notes:
 
 - `0` -- success
 - `1` -- error
-- `2` -- partial/warning

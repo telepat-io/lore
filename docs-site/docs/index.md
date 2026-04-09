@@ -27,6 +27,33 @@ Continue with:
 - [CLI Reference](./reference/cli-reference.md)
 - [Architecture](./technical/architecture.md)
 
+## Learning Paths
+
+### New here
+
+1. [Overview](./getting-started/overview.md)
+2. [Installation](./getting-started/installation.md)
+3. [Quickstart](./getting-started/quickstart.md)
+
+### Building and maintaining a wiki
+
+1. [Ingesting Content](./guides/ingesting-content.md)
+2. [Compiling Your Wiki](./guides/compiling-your-wiki.md)
+3. [Searching and Querying](./guides/searching-and-querying.md)
+4. [Troubleshooting](./guides/troubleshooting.md)
+
+### Publishing and sharing
+
+1. [Exporting](./guides/exporting.md)
+2. [MCP Server](./guides/mcp-server.md)
+3. [Explain Command](./guides/explain-command.md)
+
+### Team operations
+
+1. [Lore Angela](./guides/lore-angela.md)
+2. [Best Practices](./guides/best-practices.md)
+3. [Linting and Health](./guides/linting-and-health.md)
+
 ## Docs Theme Behavior
 
 The docs site follows your OS/browser color scheme by default (`prefers-color-scheme`).

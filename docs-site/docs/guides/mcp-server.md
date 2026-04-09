@@ -10,6 +10,14 @@ lore mcp
 
 Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cursor, and other MCP clients.
 
+## When to Use MCP
+
+Use MCP when you want agents or tools to query Lore programmatically instead of invoking CLI commands directly.
+
+- Retrieval tools: search, ask, graph traversal
+- Health tools: lint summary, orphan/gap/ambiguity checks
+- Maintenance tools: duplicate checks and index rebuild
+
 ## Tools
 
 | Tool | Description |
@@ -35,6 +43,21 @@ Starts an MCP server on stdio for agent access. Compatible with Claude Code, Cur
 - Graph diagnostics: `graph_stats`, `lint_summary`, `list_orphans`, `list_gaps`, `list_ambiguous`
 - Ingest/index maintenance: `check_duplicate`, `list_raw_tags`, `rebuild_index`
 
+## Integration Example Pattern
+
+Run Lore MCP server from your project root:
+
+```bash
+lore mcp
+```
+
+Client pattern:
+
+1. Connect to stdio transport
+2. Call `list_tools`
+3. Execute a tool request with JSON arguments
+4. Parse text payload from response
+
 ## New Utility Tools
 
 - `check_duplicate` accepts either raw `content` (hashed server-side) or a known `sha256` and returns whether an existing raw entry already exists.
@@ -58,6 +81,26 @@ Example duplicate precheck:
 	"arguments": {
 		"content": "Architecture migration notes..."
 	}
+}
+```
+
+Example ask call:
+
+```json
+{
+	"name": "ask",
+	"arguments": {
+		"question": "How does compile lock recovery work?"
+	}
+}
+```
+
+Example graph stats call:
+
+```json
+{
+	"name": "graph_stats",
+	"arguments": {}
 }
 ```
 
@@ -100,3 +143,28 @@ Example index rebuild with repair:
 3. `list_ambiguous` to identify uncertain content.
 4. perform edits/compile actions.
 5. `rebuild_index(repair=true)` to refresh graph/search state.
+
+## End-to-End Maintenance Scenario
+
+```text
+1) check_duplicate(content)
+2) rebuild_index(repair=true)
+3) lint_summary()
+4) list_gaps()
+5) ask("What are the highest-priority wiki gaps?")
+```
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Client cannot connect | Server not running from repo root | Start with `lore mcp` in initialized Lore repo |
+| Tool returns missing article errors | Index/wiki state outdated | Run `rebuild_index(repair=true)` |
+| `ask` answers are weak | Sparse wiki links or stale content | Recompile, reindex, and rerun |
+| Duplicate check always false | Content differs after normalization | Provide exact raw content or known `sha256` |
+
+## Related Docs
+
+- [Searching and Querying](./searching-and-querying.md)
+- [Compiling Your Wiki](./compiling-your-wiki.md)
+- [Troubleshooting](./troubleshooting.md)

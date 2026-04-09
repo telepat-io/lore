@@ -24,6 +24,9 @@ const sidebars = {
         'guides/linting-and-health',
         'guides/lore-angela',
         'guides/mcp-server',
+        'guides/troubleshooting',
+        'guides/best-practices',
+        'guides/explain-command',
       ],
     },
     {
@@ -43,6 +46,7 @@ const sidebars = {
         'technical/architecture',
         'technical/llm-pipeline',
         'technical/ingest-pipeline',
+        'technical/logging',
       ],
     },
     {
