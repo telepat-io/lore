@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 const mockRequireRepo = jest.fn<(...args: any[]) => any>();
 const mockRebuildIndex = jest.fn<(...args: any[]) => any>();
 const mockWatchFactory = jest.fn<(...args: any[]) => any>();
+const mockCompile = jest.fn<(...args: any[]) => any>();
 
 let eventHandlers: Record<string, (event: string, filePath: string) => void> = {};
 const mockWatcherClose = jest.fn<(...args: any[]) => any>();
@@ -16,6 +17,10 @@ async function loadWatchModule() {
 
   jest.unstable_mockModule('../../core/index.js', () => ({
     rebuildIndex: mockRebuildIndex,
+  }));
+
+  jest.unstable_mockModule('../../core/compile.js', () => ({
+    compile: mockCompile,
   }));
 
   jest.unstable_mockModule('chokidar', () => ({
@@ -35,9 +40,11 @@ describe('startWatch', () => {
     mockRequireRepo.mockReset();
     mockRebuildIndex.mockReset();
     mockWatchFactory.mockReset();
+    mockCompile.mockReset();
 
     mockRequireRepo.mockResolvedValue('/tmp/repo');
     mockRebuildIndex.mockResolvedValue({ articlesIndexed: 1, linksIndexed: 1, repairedManifestEntries: 0 });
+    mockCompile.mockResolvedValue({ articlesWritten: 1, articlesSkipped: 0, rawProcessed: 1 });
     mockWatchFactory.mockImplementation(() => ({
       on: (event: string, handler: (ev: string, filePath: string) => void) => {
         eventHandlers[event] = handler;
@@ -91,5 +98,88 @@ describe('startWatch', () => {
     await handle.close();
 
     expect(mockWatcherClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs debounced compile when autoCompile is enabled', async () => {
+    const { startWatch } = await loadWatchModule();
+    const events: Array<{ event: string; filePath: string }> = [];
+    await startWatch('/tmp/repo', {
+      autoCompile: true,
+      onEvent: (event, filePath) => events.push({ event, filePath }),
+    });
+
+    eventHandlers['all']?.('change', '/tmp/repo/.lore/raw/abc/extracted.md');
+    expect(mockCompile).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(1000);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockCompile).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(expect.arrayContaining([
+      { event: 'needs-compile', filePath: '/tmp/repo/.lore/raw/abc/extracted.md' },
+      { event: 'compile-start', filePath: 'watch' },
+    ]));
+  });
+
+  it('queues another compile when raw changes arrive during active compile', async () => {
+    const { startWatch } = await loadWatchModule();
+    let unblockCompile: (() => void) | null = null;
+    mockCompile.mockImplementation(() => new Promise((resolve) => {
+      unblockCompile = () => resolve({ articlesWritten: 1, articlesSkipped: 0, rawProcessed: 1 });
+    }));
+
+    const events: Array<{ event: string; filePath: string }> = [];
+    await startWatch('/tmp/repo', {
+      autoCompile: true,
+      onEvent: (event, filePath) => events.push({ event, filePath }),
+    });
+
+    eventHandlers['all']?.('change', '/tmp/repo/.lore/raw/abc/extracted.md');
+    jest.advanceTimersByTime(1000);
+    await Promise.resolve();
+
+    eventHandlers['all']?.('change', '/tmp/repo/.lore/raw/def/extracted.md');
+    expect(events).toEqual(expect.arrayContaining([
+      { event: 'compile-queued', filePath: 'in-flight' },
+    ]));
+
+    unblockCompile?.();
+    await Promise.resolve();
+    jest.advanceTimersByTime(100);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockCompile).toHaveBeenCalledTimes(2);
+    expect(events).toEqual(expect.arrayContaining([
+      { event: 'compile-drain', filePath: 'queued' },
+    ]));
+  });
+
+  it('suppresses reindex events during in-flight compile', async () => {
+    const { startWatch } = await loadWatchModule();
+    let unblockCompile: (() => void) | null = null;
+    mockCompile.mockImplementation(() => new Promise((resolve) => {
+      unblockCompile = () => resolve({ articlesWritten: 1, articlesSkipped: 0, rawProcessed: 1 });
+    }));
+
+    const events: Array<{ event: string; filePath: string }> = [];
+    await startWatch('/tmp/repo', {
+      autoCompile: true,
+      onEvent: (event, filePath) => events.push({ event, filePath }),
+    });
+
+    eventHandlers['all']?.('change', '/tmp/repo/.lore/raw/abc/extracted.md');
+    jest.advanceTimersByTime(1000);
+    await Promise.resolve();
+
+    eventHandlers['all']?.('change', '/tmp/repo/.lore/wiki/articles/alpha.md');
+    expect(events).toEqual(expect.arrayContaining([
+      { event: 'reindex-suppressed', filePath: 'compile-in-flight' },
+    ]));
+    expect(mockRebuildIndex).not.toHaveBeenCalled();
+
+    unblockCompile?.();
+    await Promise.resolve();
   });
 });
