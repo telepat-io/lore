@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
+import { createHash } from 'crypto';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 const mockStreamChat = jest.fn<(...args: any[]) => any>();
@@ -45,6 +46,10 @@ function article(title: string): string {
     '',
     '- [[Other]]',
   ].join('\n');
+}
+
+function sha256(content: string): string {
+  return createHash('sha256').update(content).digest('hex');
 }
 
 let tmpDir: string;
@@ -119,5 +124,60 @@ describe('compile', () => {
     const manifestRaw = await fs.readFile(path.join(tmpDir, '.lore', 'manifest.json'), 'utf-8');
     const manifest = JSON.parse(manifestRaw) as Record<string, { compiledAt?: string }>;
     expect(manifest['c3']?.compiledAt).toBeUndefined();
+  });
+
+  it('skips entries already compiled at the same extracted content hash', async () => {
+    const extracted = 'same content';
+    await writeRawEntry(tmpDir, 'd4', 'Delta source', extracted);
+    const manifest = {
+      d4: {
+        mtime: '2026-04-08T00:00:00.000Z',
+        compiledAt: '2026-04-08T00:00:00.000Z',
+        extractedHash: sha256(extracted),
+      },
+    };
+    await fs.writeFile(path.join(tmpDir, '.lore', 'manifest.json'), JSON.stringify(manifest, null, 2));
+
+    const { compile } = await loadCompile();
+    const result = await compile(tmpDir);
+
+    expect(result).toEqual({ articlesWritten: 0, articlesSkipped: 1, rawProcessed: 0 });
+    expect(mockStreamChat).not.toHaveBeenCalled();
+    expect(mockRebuildIndex).not.toHaveBeenCalled();
+  });
+
+  it('recompiles entries when extracted content hash changes', async () => {
+    const extracted = 'fresh content';
+    await writeRawEntry(tmpDir, 'e5', 'Epsilon source', extracted);
+    await fs.writeFile(
+      path.join(tmpDir, '.lore', 'manifest.json'),
+      JSON.stringify({
+        e5: {
+          mtime: '2026-04-08T00:00:00.000Z',
+          compiledAt: '2026-04-08T00:00:00.000Z',
+          extractedHash: 'outdated-hash',
+        },
+      }, null, 2)
+    );
+
+    mockStreamChat.mockResolvedValue({
+      content: article('Epsilon Concept'),
+      tokensUsed: 120,
+      finishReason: 'stop',
+      wasTruncated: false,
+    });
+
+    const { compile } = await loadCompile();
+    const result = await compile(tmpDir);
+
+    expect(result.articlesWritten).toBe(1);
+    expect(result.rawProcessed).toBe(1);
+    expect(mockStreamChat).toHaveBeenCalledTimes(1);
+    expect(mockRebuildIndex).toHaveBeenCalledTimes(1);
+
+    const manifestRaw = await fs.readFile(path.join(tmpDir, '.lore', 'manifest.json'), 'utf-8');
+    const manifest = JSON.parse(manifestRaw) as Record<string, { extractedHash?: string; compiledAt?: string }>;
+    expect(manifest['e5']?.compiledAt).toBeDefined();
+    expect(manifest['e5']?.extractedHash).toBe(sha256(extracted));
   });
 });

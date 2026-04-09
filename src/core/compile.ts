@@ -4,6 +4,7 @@ import { requireRepo } from './repo.js';
 import { streamChat, type LlmMessage } from './llm.js';
 import { rebuildIndex } from './index.js';
 import { type RunLogger } from './logger.js';
+import { hashContent } from '../utils/hash.js';
 
 export interface CompileOptions {
   force?: boolean;
@@ -20,6 +21,7 @@ export interface CompileResult {
 interface ManifestEntry {
   mtime: string;
   compiledAt?: string;
+  extractedHash?: string;
 }
 
 class RetryableCompileError extends Error {
@@ -81,17 +83,21 @@ export async function compile(cwd: string, opts: CompileOptions = {}): Promise<C
     rawDirs = [];
   }
 
-  const toCompile: { sha256: string; extracted: string; meta: { title: string } }[] = [];
+  const toCompile: { sha256: string; extracted: string; extractedHash: string; meta: { title: string } }[] = [];
 
   for (const sha256 of rawDirs) {
-    const entry = manifest[sha256];
-    if (!opts.force && entry?.compiledAt) continue;
-
     try {
       const extracted = await fs.readFile(path.join(rawDir, sha256, 'extracted.md'), 'utf-8');
       const metaRaw = await fs.readFile(path.join(rawDir, sha256, 'meta.json'), 'utf-8');
       const meta = JSON.parse(metaRaw) as { title: string };
-      toCompile.push({ sha256, extracted, meta });
+      const extractedHash = hashContent(extracted);
+      const entry = manifest[sha256];
+      const alreadyCompiled = !!entry?.compiledAt;
+      const isUnchanged = alreadyCompiled && entry?.extractedHash === extractedHash;
+
+      if (!opts.force && isUnchanged) continue;
+
+      toCompile.push({ sha256, extracted, extractedHash, meta });
     } catch {
       // Skip malformed entries
     }
@@ -171,7 +177,7 @@ interface ParsedArticle {
 
 async function compileBatch(
   cwd: string,
-  batch: { sha256: string; extracted: string; meta: { title: string } }[],
+  batch: { sha256: string; extracted: string; extractedHash: string; meta: { title: string } }[],
   articlesDir: string,
   articleOffset: number,
   manifest: Record<string, ManifestEntry>,
@@ -227,6 +233,7 @@ async function compileBatch(
   for (const entry of batch) {
     if (!manifest[entry.sha256]) manifest[entry.sha256] = { mtime: now };
     manifest[entry.sha256]!.compiledAt = now;
+    manifest[entry.sha256]!.extractedHash = entry.extractedHash;
   }
   await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 

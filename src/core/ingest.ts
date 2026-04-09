@@ -303,7 +303,15 @@ async function updateManifestMtime(root: string, sha256: string, logger?: RunLog
   } catch {
     // fresh manifest
   }
-  manifest[sha256] = { mtime: new Date().toISOString() };
+
+  const now = new Date().toISOString();
+  const existing = manifest[sha256];
+  if (existing && typeof existing === 'object' && !Array.isArray(existing)) {
+    manifest[sha256] = { ...(existing as Record<string, unknown>), mtime: now };
+  } else {
+    manifest[sha256] = { mtime: now };
+  }
+
   await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
   logger?.stepEnd('ingest.update.manifest');
 }
