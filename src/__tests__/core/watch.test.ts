@@ -144,7 +144,7 @@ describe('startWatch', () => {
       { event: 'compile-queued', filePath: 'in-flight' },
     ]));
 
-    unblockCompile?.();
+    (unblockCompile as (() => void) | null)?.();
     await Promise.resolve();
     jest.advanceTimersByTime(100);
     await Promise.resolve();
@@ -179,7 +179,7 @@ describe('startWatch', () => {
     ]));
     expect(mockRebuildIndex).not.toHaveBeenCalled();
 
-    unblockCompile?.();
+    (unblockCompile as (() => void) | null)?.();
     await Promise.resolve();
   });
 });
