@@ -51,9 +51,6 @@ Lore supports a mixed ingestion pipeline, including PDFs and video URLs.
 
 Video provenance:
 
-- Video ingest metadata now records which extractor path was used in `.lore/raw/<sha>/meta.json` under `extractor`.
-- Values include `yt-dlp` and fallback reasons such as `url-fallback-no-ytdlp`, `url-fallback-no-subs`, and `url-fallback-empty-transcript`.
-
 Raw metadata shape:
 
 ```json

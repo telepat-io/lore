@@ -5,7 +5,7 @@ import { requireRepo } from './repo.js';
 
 const DEFAULT_MAX_LOG_FILES = 200;
 
-export type RunCommand = 'ingest' | 'compile' | 'query';
+export type RunCommand = 'ingest' | 'ingest-sessions' | 'compile' | 'query';
 
 type RunEventType =
   | 'run_start'

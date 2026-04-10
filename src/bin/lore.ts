@@ -4,6 +4,7 @@ import { render } from 'ink';
 import React from 'react';
 import { initCommand } from '../commands/init.js';
 import { ingestCommand } from '../commands/ingest.js';
+import { ingestSessionsCommand } from '../commands/ingestSessions.js';
 import { compileCommand } from '../commands/compile.js';
 import { indexCommand } from '../commands/index.js';
 import { queryCommand } from '../commands/query.js';
@@ -43,6 +44,15 @@ program
   .description('Ingest a file or URL into the knowledge base')
   .option('--json', 'Output JSON')
   .action(ingestCommand);
+
+program
+  .command('ingest-sessions [framework]')
+  .description('Ingest session history from supported agent frameworks (default: all)')
+  .option('--root <path...>', 'Optional custom root path(s) to scan instead of framework defaults')
+  .option('--max-files <n>', 'Maximum number of session files to ingest per framework', '500')
+  .option('--dry-run', 'Discover files without ingesting')
+  .option('--json', 'Output JSON')
+  .action(ingestSessionsCommand);
 
 program
   .command('compile')

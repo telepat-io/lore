@@ -31,6 +31,30 @@ flowchart LR
 	E --> F[Write meta.json and manifest mtime]
 ```
 
+## Session Framework Sources
+
+Lore can ingest local session history directly using:
+
+```bash
+lore ingest-sessions [framework|all]
+```
+
+| Framework key | Default source locations (OS-dependent) | Typical file types |
+|---|---|---|
+| `claude-code` | `~/.claude/projects/` | `.jsonl` |
+| `codex-cli` | `~/.codex/sessions/`, `~/.codex/projects/` | `.jsonl` |
+| `copilot-cli` | `~/.copilot/session-state/` (or `COPILOT_HOME`) | `events.jsonl` |
+| `copilot-chat` | VS Code workspace storage `*/chatSessions/` | `.jsonl`, `.json` |
+| `cursor` | Cursor workspace storage | `.jsonl`, `.json` |
+| `gemini-cli` | `~/.gemini/`, `~/.config/gemini/` | `.jsonl`, `.json`, `.md` |
+| `obsidian` | `~/Documents/Obsidian Vault/` (or custom roots) | `.md` |
+
+Notes:
+
+- Session imports run through the same raw ingest pipeline and produce `.lore/raw/<sha>/` entries.
+- `meta.json` now includes `session` metadata for framework-ingested sources.
+- `--dry-run` lets you audit discovery before writing ingest output.
+
 ## Conversation Export Support (`.json` / `.jsonl`)
 
 Lore attempts schema detection before generic JSON rendering.

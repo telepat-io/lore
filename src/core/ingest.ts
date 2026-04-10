@@ -25,6 +25,7 @@ interface MetaJson {
   format: string;
   title: string;
   extractor?: VideoExtractor;
+  session?: Record<string, unknown>;
   sourceUrl?: string;
   sourcePath?: string;
   date: string;
@@ -128,6 +129,8 @@ const MEMORY_TYPE_PATTERNS: Record<string, RegExp[]> = {
 
 export interface IngestOptions {
   logger?: RunLogger;
+  sessionMeta?: Record<string, unknown>;
+  tags?: string[];
 }
 
 /** Detect format and route to the correct parser, then store in raw/ */
@@ -199,7 +202,7 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
 
   const inferredPathTags = sourcePath ? inferTagsFromPath(sourcePath) : [];
   const inferredMemoryTags = inferMemoryTypeTags(normalized.markdown);
-  const inferredTags = mergeTags(inferredPathTags, inferredMemoryTags);
+  const inferredTags = mergeTags(inferredPathTags, inferredMemoryTags, opts.tags ?? []);
 
   // Compute SHA256 of the original content
   const sha256 = typeof rawContent === 'string'
@@ -252,6 +255,7 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
     format,
     title: normalized.title,
     ...(extractor ? { extractor } : {}),
+    ...(opts.sessionMeta ? { session: opts.sessionMeta } : {}),
     date: new Date().toISOString(),
     tags: inferredTags,
     ...(isUrl ? { sourceUrl: input } : { sourcePath: sourcePath ?? path.resolve(cwd, input) }),

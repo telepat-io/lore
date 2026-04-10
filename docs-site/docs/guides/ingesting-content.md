@@ -8,6 +8,10 @@ sidebar_position: 3
 lore ingest <path|url>
 ```
 
+```bash
+lore ingest-sessions [framework|all]
+```
+
 ## Supported Formats
 
 | Format | Method |
@@ -21,6 +25,44 @@ lore ingest <path|url>
 | Video URLs | yt-dlp subtitles |
 
 All ingested content is stored in `.lore/raw/<sha256>/` with `extracted.md` and `meta.json`.
+
+## Framework Session Ingestion
+
+Use `lore ingest-sessions` to pull session history from local framework storage.
+
+Supported framework values:
+
+- `claude-code`
+- `codex-cli`
+- `copilot-cli`
+- `copilot-chat`
+- `cursor`
+- `gemini-cli`
+- `obsidian`
+- `all` (default)
+
+Examples:
+
+```bash
+# ingest all supported framework session stores
+lore ingest-sessions all
+
+# ingest only Claude Code sessions
+lore ingest-sessions claude-code
+
+# run discovery only, no ingest writes
+lore ingest-sessions all --dry-run --json
+
+# override default roots and cap scan size
+lore ingest-sessions copilot-chat --root ~/Library/Application\ Support/Code/User/workspaceStorage --max-files 200
+```
+
+Flags:
+
+- `--root <path...>`: optional root path(s) to scan instead of defaults
+- `--max-files <n>`: max discovered files per framework (default `500`)
+- `--dry-run`: discover only, do not ingest
+- `--json`: machine-readable summary with `runId`/`logPath`
 
 ## Ingest Flow
 
