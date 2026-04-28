@@ -1,4 +1,6 @@
-# Lore
+<p align="center"><img src="./lore.webp" width="128" alt="Lore"></p>
+<h1 align="center">Lore</h1>
+<p align="center"><em>The memory your project never forgets.</em></p>
 
 Build and maintain a persistent LLM knowledge base from your project content.
 
