@@ -70,7 +70,7 @@ export class RunLogger {
   stepEnd(step: string, details?: Record<string, unknown>): void {
     const start = this.stepStarts.get(step);
     this.stepStarts.delete(step);
-    const elapsedMs = start === undefined ? undefined : Number((performance.now() - start).toFixed(2));
+    const elapsedMs = start !== undefined ? Number((performance.now() - start).toFixed(2)) : undefined;
     this.record('step_end', step, details, undefined, elapsedMs);
   }
 
@@ -117,9 +117,9 @@ export class RunLogger {
       command: this.command,
       event,
       timestamp: new Date().toISOString(),
-      ...(step ? { step } : {}),
-      ...(details ? { details } : {}),
-      ...(error ? { error } : {}),
+      ...(step !== undefined ? { step } : {}),
+      ...(details !== undefined ? { details } : {}),
+      ...(error !== undefined ? { error } : {}),
       ...(elapsedMs !== undefined ? { elapsedMs } : {}),
     };
 

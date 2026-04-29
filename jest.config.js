@@ -36,16 +36,16 @@ export default {
   ],
   coverageThreshold: {
     global: {
-      lines: 80,
-      branches: 60,
+      lines: 95,
+      branches: 90,
     },
     'src/core/**/*.ts': {
-      lines: 90,
-      branches: 80,
+      lines: 95,
+      branches: 90,
     },
     'src/utils/**/*.ts': {
-      lines: 90,
-      branches: 80,
+      lines: 95,
+      branches: 90,
     },
   },
 };

@@ -7,7 +7,7 @@ export interface LintDiagnostic {
   rule: 'orphaned-article' | 'broken-wikilink' | 'ambiguous-confidence' | 'missing-summary' | 'short-page';
   severity: 'warning' | 'error';
   file: string;
-  line?: number;
+  line: number;
   message: string;
 }
 
@@ -46,11 +46,11 @@ function extractLinks(content: string): LinkRef[] {
   const refs: LinkRef[] = [];
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? '';
+    const line = lines[i]!;
     const pattern = /\[\[([^\]]+)\]\]/g;
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(line)) !== null) {
-      const target = toSlug(match[1] ?? '');
+      const target = toSlug(match[1]!);
       if (target) {
         refs.push({ target, line: i + 1 });
       }
@@ -71,8 +71,8 @@ function parseArticle(file: string, content: string): ArticleRecord {
     file,
     slug,
     content,
-    frontmatter: fmMatch[1] ?? '',
-    body: fmMatch[2] ?? '',
+    frontmatter: fmMatch[1]!,
+    body: fmMatch[2]!,
   };
 }
 
@@ -210,8 +210,8 @@ export async function lintWiki(cwd: string): Promise<LintResult> {
       if (a.file !== b.file) {
         return a.file.localeCompare(b.file);
       }
-      if ((a.line ?? 0) !== (b.line ?? 0)) {
-        return (a.line ?? 0) - (b.line ?? 0);
+      if (a.line !== b.line) {
+        return a.line - b.line;
       }
       return a.rule.localeCompare(b.rule);
     });

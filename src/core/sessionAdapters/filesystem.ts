@@ -24,10 +24,7 @@ export async function discoverFiles(options: DiscoverFilesOptions): Promise<stri
   const queue: Array<{ dir: string; depth: number }> = options.roots.map((dir) => ({ dir, depth: 0 }));
 
   while (queue.length > 0 && results.length < options.maxFiles) {
-    const current = queue.shift();
-    if (!current) {
-      break;
-    }
+    const current = queue.shift()!;
 
     let entries: Dirent[] = [];
     try {

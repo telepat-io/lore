@@ -101,8 +101,8 @@ export function extractConceptMetadata(file: string, content: string): ConceptMe
   let frontmatter = '';
   let body = content;
   if (fmMatch) {
-    frontmatter = fmMatch[1] ?? '';
-    body = fmMatch[2] ?? '';
+    frontmatter = fmMatch[1]!;
+    body = fmMatch[2]!;
   }
 
   const titleFromFm = frontmatter.match(/^title:\s*(.+)$/m)?.[1]?.trim().replace(/^['"]|['"]$/g, '');

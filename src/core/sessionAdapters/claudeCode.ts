@@ -41,5 +41,5 @@ function inferProjectFromPath(filePath: string, marker: string): string {
 
   const subPath = normalized.slice(idx + marker.length).replace(/^\//, '');
   const firstSegment = subPath.split('/')[0];
-  return firstSegment || path.basename(path.dirname(filePath));
+  return firstSegment!;
 }

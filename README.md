@@ -1,4 +1,4 @@
-<p align="center"><img src="./lore.webp" width="128" alt="Lore"></p>
+<p align="center"><img src="./lore-logo.webp" width="128" alt="Lore"></p>
 <h1 align="center">Lore</h1>
 <p align="center"><em>The memory your project never forgets.</em></p>
 
