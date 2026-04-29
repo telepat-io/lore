@@ -60,6 +60,10 @@ Use `package.json` scripts as canonical. Do not invent alternate command names.
 - E2E tests: `e2e/flows/...` with mocked integrations in `e2e/mocks/...`
 - Prefer targeted tests first, then full suite as needed.
 
+## Commits and Releases
+
+Use Conventional Commits (`fix:`, `feat:`, `docs:`, etc.). This repo uses a release-please driven workflow, so commit messages directly affect changelogs and version bumps.
+
 ## Docs Guidance
 
 For user-facing docs, optimize for:
