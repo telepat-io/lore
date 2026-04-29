@@ -91,7 +91,6 @@ Lore 内置一流的 MCP 服务器，供智能体集成：
 - [MCP 服务器](https://docs.telepat.io/lore/guides/mcp-server)
 - [故障排查](https://docs.telepat.io/lore/guides/troubleshooting)
 - [CLI 参考](https://docs.telepat.io/lore/reference/cli-reference)
-- 语言支持：English 与 简体中文
 - [仓库](https://github.com/telepat-io/lore)
 - [npm 包](https://www.npmjs.com/package/@telepat/lore)
 

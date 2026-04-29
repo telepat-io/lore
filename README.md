@@ -91,7 +91,6 @@ Environment variables (highest precedence at runtime):
 - [MCP server](https://docs.telepat.io/lore/guides/mcp-server)
 - [Troubleshooting](https://docs.telepat.io/lore/guides/troubleshooting)
 - [CLI reference](https://docs.telepat.io/lore/reference/cli-reference)
-- Language support: English and Simplified Chinese
 - [Repository](https://github.com/telepat-io/lore)
 - [npm package](https://www.npmjs.com/package/@telepat/lore)
 
