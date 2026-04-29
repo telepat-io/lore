@@ -176,8 +176,8 @@ describe('global config', () => {
     const originalStdin = process.stdin.isTTY;
     const originalStdout = process.stdout.isTTY;
     const originalCwd = process.cwd;
-    process.stdin.isTTY = false;
-    process.stdout.isTTY = false;
+    Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
+    Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true });
     process.cwd = () => globalTmp;
 
     const writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -192,8 +192,94 @@ describe('global config', () => {
     expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('test-model'));
 
     writeSpy.mockRestore();
-    process.stdin.isTTY = originalStdin;
-    process.stdout.isTTY = originalStdout;
+    Object.defineProperty(process.stdin, 'isTTY', { value: originalStdin, configurable: true });
+    Object.defineProperty(process.stdout, 'isTTY', { value: originalStdout, configurable: true });
+    process.cwd = originalCwd;
+  });
+
+  it('renderSettings prints not-set when secrets are missing', async () => {
+    Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
+    Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true });
+    const originalCwd = process.cwd;
+    process.cwd = () => globalTmp;
+
+    const writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    const { renderSettings } = await loadConfigModule();
+    await renderSettings();
+
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('not set'));
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('not set'));
+
+    writeSpy.mockRestore();
+    Object.defineProperty(process.stdin, 'isTTY', { value: process.stdin.isTTY, configurable: true });
+    Object.defineProperty(process.stdout, 'isTTY', { value: process.stdout.isTTY, configurable: true });
+    process.cwd = originalCwd;
+  });
+
+  it('renderSettings processes interactive flow result', async () => {
+    await initRepo(globalTmp);
+    await fs.writeFile(
+      path.join(globalTmp, '.lore', 'config.json'),
+      JSON.stringify({ model: 'original-model', temperature: 0.5, maxTokens: 4096 }),
+    );
+
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+    Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
+    const originalCwd = process.cwd;
+    process.cwd = () => globalTmp;
+
+    const writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    const flowResult = {
+      global: { openrouterApiKey: 'new-key', cloudflareAccountId: null },
+      repo: { model: 'updated-model', temperature: 0.8 },
+    };
+
+    jest.resetModules();
+
+    jest.unstable_mockModule('env-paths', () => ({
+      default: () => ({ config: globalTmp, data: globalTmp, log: globalTmp }),
+    }));
+
+    const saveSecretsMock = jest.fn(async () => undefined);
+    jest.unstable_mockModule('../../core/secretStore.js', () => ({
+      loadSecrets: async () => ({
+        openrouterApiKey: null,
+        replicateApiToken: null,
+        cloudflareToken: null,
+      }),
+      saveSecrets: saveSecretsMock,
+    }));
+
+    jest.unstable_mockModule('react', () => ({
+      createElement: jest.fn((_type: any, props: any) => ({ props })),
+    }));
+
+    jest.unstable_mockModule('ink', () => ({
+      render: jest.fn((element: any) => {
+        element.props.onDone(flowResult);
+        return { waitUntilExit: () => Promise.resolve() };
+      }),
+    }));
+
+    jest.unstable_mockModule('../../ui/SettingsCliFlow.js', () => ({
+      SettingsCliFlow: jest.fn(),
+    }));
+
+    const { renderSettings } = await import('../../core/config.js');
+    await renderSettings();
+
+    expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining('Settings updated'));
+
+    const updatedConfig = await readRepoConfig(globalTmp);
+    expect(updatedConfig.model).toBe('updated-model');
+    expect(updatedConfig.temperature).toBe(0.8);
+    expect(updatedConfig.maxTokens).toBe(4096);
+
+    writeSpy.mockRestore();
+    Object.defineProperty(process.stdin, 'isTTY', { value: process.stdin.isTTY, configurable: true });
+    Object.defineProperty(process.stdout, 'isTTY', { value: process.stdout.isTTY, configurable: true });
     process.cwd = originalCwd;
   });
 });
