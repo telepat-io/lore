@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/telepat-io/lore/compare/lore-v0.1.1...lore-v0.1.2) (2026-04-29)
+
+
+### Bug Fixes
+
+* update better-sqlite3 to v12 for Node 24 compatibility ([71e9185](https://github.com/telepat-io/lore/commit/71e9185419deb3acf2028813b42fa20d575f0bd9))
+
 ## [0.1.1](https://github.com/telepat-io/lore/compare/lore-v0.1.0...lore-v0.1.1) (2026-04-29)
 
 
