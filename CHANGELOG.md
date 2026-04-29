@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/telepat-io/lore/compare/lore-v0.1.2...lore-v0.1.3) (2026-04-29)
+
+
+### Bug Fixes
+
+* use Object.defineProperty for isTTY in config test and add coverage for renderSettings ([4dc254f](https://github.com/telepat-io/lore/commit/4dc254ffd00ee62c1c8d60ecc83f0f93c64292e9))
+
 ## [0.1.2](https://github.com/telepat-io/lore/compare/lore-v0.1.1...lore-v0.1.2) (2026-04-29)
 
 
