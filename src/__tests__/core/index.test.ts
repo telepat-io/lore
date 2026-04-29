@@ -155,4 +155,42 @@ Content here.
       db.close();
     }
   });
+
+  it('handles missing articles directory gracefully', async () => {
+    await fs.rm(path.join(tmpDir, '.lore', 'wiki', 'articles'), { recursive: true, force: true });
+    const result = await rebuildIndex(tmpDir);
+    expect(result.articlesIndexed).toBe(0);
+    expect(result.linksIndexed).toBe(0);
+  });
+
+  it('keeps title as slug when no frontmatter or H1 exists', async () => {
+    const articlesDir = path.join(tmpDir, '.lore', 'wiki', 'articles');
+    await fs.writeFile(path.join(articlesDir, 'plain.md'), 'Just body text with [[Link]].');
+
+    await rebuildIndex(tmpDir);
+
+    const db = openDb(tmpDir);
+    try {
+      const row = db.prepare("SELECT title FROM articles WHERE slug = 'plain'").get() as { title: string };
+      expect(row.title).toBe('plain');
+    } finally {
+      db.close();
+    }
+  });
+
+  it('repairs manifest with corrupt manifest file', async () => {
+    const sha = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+    const rawEntryDir = path.join(tmpDir, '.lore', 'raw', sha);
+    await fs.mkdir(rawEntryDir, { recursive: true });
+    await fs.writeFile(path.join(tmpDir, '.lore', 'manifest.json'), 'not-json');
+
+    const result = await rebuildIndex(tmpDir, { repair: true });
+    expect(result.repairedManifestEntries).toBe(1);
+  });
+
+  it('repairs manifest when raw directory is missing', async () => {
+    await fs.rm(path.join(tmpDir, '.lore', 'raw'), { recursive: true, force: true });
+    const result = await rebuildIndex(tmpDir, { repair: true });
+    expect(result.repairedManifestEntries).toBe(0);
+  });
 });

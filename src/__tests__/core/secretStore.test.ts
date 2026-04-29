@@ -165,6 +165,16 @@ describe('secretStore', () => {
     await expect(loadSecrets()).rejects.toBe('plain-failure');
   });
 
+  it('loadSecrets rethrows non-Error keytar import failures', async () => {
+    jest.resetModules();
+    jest.unstable_mockModule('keytar', () => {
+      throw 'plain-import-failure';
+    });
+
+    const { loadSecrets } = await import('../../core/secretStore.js');
+    await expect(loadSecrets()).rejects.toBe('plain-import-failure');
+  });
+
   it('warns only once for repeated keychain availability failures', async () => {
     mockGetPassword.mockRejectedValue(new Error('dbus unavailable'));
 

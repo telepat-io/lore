@@ -88,6 +88,43 @@ describe('session adapter filesystem helpers', () => {
     expect(found.some((entry) => entry.includes('keep.jsonl'))).toBe(true);
   });
 
+  it('discoverFiles tolerates unreadable roots and symlinks', async () => {
+    const root = path.join(tmpDir, 'root-unreadable');
+    await fs.mkdir(path.join(root, 'a'), { recursive: true });
+    await fs.writeFile(path.join(root, 'a', 'one.jsonl'), '{}');
+    await fs.writeFile(path.join(root, 'not-dir'), '{}');
+    await fs.symlink(path.join(root, 'a', 'one.jsonl'), path.join(root, 'a', 'link.jsonl'));
+
+    const found = await discoverFiles({
+      roots: [path.join(root, 'not-dir'), root],
+      extensions: new Set(['.jsonl']),
+      maxFiles: 10,
+      maxDepth: 3,
+    });
+
+    expect(found.some((entry) => entry.endsWith('one.jsonl'))).toBe(true);
+    expect(found.some((entry) => entry.includes('link.jsonl'))).toBe(false);
+  });
+
+  it('discoverFiles respects maxFiles and maxDepth', async () => {
+    const root = path.join(tmpDir, 'root-limits');
+    await fs.mkdir(path.join(root, 'd1', 'd2', 'd3'), { recursive: true });
+    await fs.writeFile(path.join(root, 'a.jsonl'), '{}');
+    await fs.writeFile(path.join(root, 'b.jsonl'), '{}');
+    await fs.writeFile(path.join(root, 'd1', 'c.jsonl'), '{}');
+    await fs.writeFile(path.join(root, 'd1', 'd2', 'd3', 'deep.jsonl'), '{}');
+
+    const found = await discoverFiles({
+      roots: [root],
+      extensions: new Set(['.jsonl']),
+      maxFiles: 2,
+      maxDepth: 1,
+    });
+
+    expect(found.length).toBe(2);
+    expect(found.some((entry) => entry.includes('deep.jsonl'))).toBe(false);
+  });
+
   it('discovers Claude Code sessions and infers project from marker path', async () => {
     const root = path.join(tmpDir, '.claude', 'projects', 'demo-proj');
     await fs.mkdir(root, { recursive: true });

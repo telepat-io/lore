@@ -251,10 +251,7 @@ function extractSlackMessages(data: unknown): ConversationMessage[] | null {
     if (!userRoles.has(speaker)) {
       userRoles.set(speaker, userRoles.size % 2 === 0 ? 'user' : 'assistant');
     }
-    const role = userRoles.get(speaker);
-    if (!role) {
-      continue;
-    }
+    const role = userRoles.get(speaker)!;
     messages.push({ role, text });
   }
 

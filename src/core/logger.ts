@@ -107,7 +107,7 @@ export class RunLogger {
 
   private record(
     event: RunEventType,
-    step?: string,
+    step: string,
     details?: Record<string, unknown>,
     error?: { name: string; message: string },
     elapsedMs?: number,
@@ -117,7 +117,7 @@ export class RunLogger {
       command: this.command,
       event,
       timestamp: new Date().toISOString(),
-      ...(step !== undefined ? { step } : {}),
+      step,
       ...(details !== undefined ? { details } : {}),
       ...(error !== undefined ? { error } : {}),
       ...(elapsedMs !== undefined ? { elapsedMs } : {}),

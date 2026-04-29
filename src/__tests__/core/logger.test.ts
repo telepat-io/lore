@@ -60,9 +60,11 @@ describe('RunLogger', () => {
   it('records progress, retry, info, and unknown-error events', async () => {
     const logger = await RunLogger.create(tmpDir, 'query');
     logger.progress('query.fetch', 1, 3, { source: 'db' });
+    logger.progress('query.fetch', 2, 3);
     logger.retry('query.fetch', { attempt: 2 });
     logger.info('query.fetch', { detail: 'continuing' });
     logger.error('query.fetch', 'plain-string-error', { code: 'E_UNKNOWN' });
+    logger.error('query.fetch', new Error('typed error'));
     await logger.close('error', { status: 'failed' });
 
     const raw = await fs.readFile(logger.logPath, 'utf-8');
@@ -75,6 +77,7 @@ describe('RunLogger', () => {
     expect(lines.some((line) => line.event === 'retry')).toBe(true);
     expect(lines.some((line) => line.event === 'info')).toBe(true);
     expect(lines.some((line) => line.event === 'error' && line.error?.name === 'UnknownError')).toBe(true);
+    expect(lines.some((line) => line.event === 'error' && line.error?.name === 'Error')).toBe(true);
   });
 
   it('uses default max logs when LORE_LOG_MAX_FILES is invalid', async () => {

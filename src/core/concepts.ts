@@ -65,7 +65,7 @@ function parseConfidence(frontmatter: string): ConceptMetadata['confidence'] {
 function generateAliases(title: string): string[] {
   const aliases = new Set<string>();
   const slug = slugify(title);
-  if (slug && slug !== title) {
+  if (slug !== title) {
     aliases.add(slug);
   }
 
@@ -83,12 +83,9 @@ function generateAliases(title: string): string[] {
   const words = title.split(/\s+/).filter(Boolean);
   if (words.length >= 3) {
     const acronym = words
-      .map(w => w[0]?.toUpperCase() ?? '')
-      .join('')
-      .trim();
-    if (acronym && acronym !== title) {
-      aliases.add(acronym);
-    }
+      .map(w => w[0]!.toUpperCase())
+      .join('');
+    aliases.add(acronym);
   }
 
   return [...aliases].sort((a, b) => a.localeCompare(b));

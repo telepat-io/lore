@@ -312,4 +312,97 @@ describe('parseJson', () => {
     expect(md).toContain('> follow up before answer');
     expect(md).toContain('combined answer');
   });
+
+  it('falls back to generic JSONL when JSONL contains non-object lines', () => {
+    const md = parseJson('123\n456');
+    expect(md).toContain('Entry 1');
+    expect(md).toContain('Entry 2');
+  });
+
+  it('skips Claude JSONL lines missing type or message', () => {
+    const lines = [
+      JSON.stringify({ type: 'human', message: { content: 'q' } }),
+      JSON.stringify({ type: 'human' }),
+      JSON.stringify({ type: 'assistant', message: { content: 'a' } }),
+    ];
+    const md = parseJson(lines.join('\n'));
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> q');
+    expect(md).toContain('a');
+  });
+
+  it('falls back for record with messages array lacking conversation shape', () => {
+    const md = parseJson(JSON.stringify({ messages: [{ role: 'user', content: 'hi' }] }));
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('messages');
+  });
+
+  it('falls back for primitive JSON values', () => {
+    const md = parseJson(JSON.stringify(42));
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('42');
+  });
+
+  it('ignores non-record nodes in ChatGPT mapping', () => {
+    const input = JSON.stringify({
+      mapping: {
+        root: { id: 'root', parent: null, message: null, children: ['u1'] },
+        u1: { id: 'u1', parent: 'root', message: { author: { role: 'user' }, content: { parts: ['Q'] } }, children: ['a1'] },
+        notRecord: 'bad',
+        a1: { id: 'a1', parent: 'u1', message: { author: { role: 'assistant' }, content: { parts: ['A'] } }, children: [] },
+      },
+    });
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> Q');
+    expect(md).toContain('A');
+  });
+
+  it('falls back when ChatGPT mapping has no root node', () => {
+    const input = JSON.stringify({
+      mapping: {
+        u1: { id: 'u1', parent: 'root', message: { author: { role: 'user' }, content: { parts: ['Q'] } }, children: [] },
+      },
+    });
+    const md = parseJson(input);
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('mapping');
+  });
+
+  it('falls back when ChatGPT traversal hits a non-record node', () => {
+    const input = JSON.stringify({
+      mapping: {
+        root: { id: 'root', parent: null, message: null, children: ['bad'] },
+        bad: 'not-a-record',
+      },
+    });
+    const md = parseJson(input);
+    expect(md).not.toContain('# Conversation Transcript');
+    expect(md).toContain('mapping');
+  });
+
+  it('ignores Slack messages missing speaker or text', () => {
+    const input = JSON.stringify([
+      { type: 'message', user: 'U1', text: 'Hello' },
+      { type: 'message', user: '', text: 'missing speaker' },
+      { type: 'message', user: 'U2', text: '' },
+      { type: 'message', username: 'U3', text: 'World' },
+    ]);
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> Hello');
+    expect(md).toContain('World');
+  });
+
+  it('skips non-record items in role/content arrays', () => {
+    const input = JSON.stringify([
+      { role: 'user', content: 'hi' },
+      123,
+      { role: 'assistant', content: 'hello' },
+    ]);
+    const md = parseJson(input);
+    expect(md).toContain('# Conversation Transcript');
+    expect(md).toContain('> hi');
+    expect(md).toContain('hello');
+  });
 });

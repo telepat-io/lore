@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { acquireCompileLock, releaseCompileLock } from '../../core/lock.js';
 
 let tmpDir: string;
@@ -40,5 +40,22 @@ describe('compile lock', () => {
     await expect(acquireCompileLock(tmpDir)).resolves.toBe(true);
     const currentPid = await fs.readFile(lockPath, 'utf-8');
     expect(currentPid.trim()).toBe(String(process.pid));
+  });
+
+  it('reclaims stale lock when the owning process is dead', async () => {
+    const { spawn } = await import('child_process');
+    const child = spawn(process.execPath, ['-e', 'process.exit(0)']);
+    await new Promise<void>((resolve) => child.on('exit', () => resolve()));
+    await fs.writeFile(lockPath, String(child.pid!));
+
+    await expect(acquireCompileLock(tmpDir)).resolves.toBe(true);
+  });
+
+  it('rethrows unexpected errors from tryCreateLock', async () => {
+    const openSpy = jest.spyOn(fs, 'open').mockRejectedValue(new Error('disk full'));
+
+    await expect(acquireCompileLock(tmpDir)).rejects.toThrow('disk full');
+
+    openSpy.mockRestore();
   });
 });
