@@ -1,6 +1,18 @@
 <p align="center"><img src="./lore-logo.webp" width="128" alt="Lore"></p>
 <h1 align="center">Lore</h1>
+<hr>
 <p align="center"><em>The memory your project never forgets.</em></p>
+
+<p align="center">
+  <a href="https://docs.telepat.io/lore">📖 Docs</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/telepat-io/lore/actions/workflows/ci.yml"><img src="https://github.com/telepat-io/lore/actions/workflows/ci.yml/badge.svg?branch=main" alt="Build"></a>
+  <a href="https://codecov.io/gh/telepat-io/lore"><img src="https://codecov.io/gh/telepat-io/lore/graph/badge.svg" alt="Codecov"></a>
+  <a href="https://www.npmjs.com/package/@telepat/lore"><img src="https://img.shields.io/npm/v/@telepat/lore" alt="npm"></a>
+  <a href="https://github.com/telepat-io/lore/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License"></a>
+</p>
 
 Build and maintain a persistent LLM knowledge base from your project content.
 
