@@ -1,6 +1,6 @@
 <p align="center"><img src="./assets/avatar/lore-logo.webp" width="128" alt="Lore"></p>
 <h1 align="center">Lore</h1>
-<p align="center"><em>Build persistent LLM knowledge bases from any content — compiled markdown wikis, not vector embeddings.</em></p>
+<p align="center"><em>Build persistent LLM knowledge bases from any content. Compiled markdown wikis, not vector embeddings.</em></p>
 
 <p align="center">
   <a href="https://docs.telepat.io/lore">📖 Docs</a>
