@@ -1,4 +1,4 @@
-<p align="center"><img src="./lore-logo.webp" width="128" alt="Lore"></p>
+<p align="center"><img src="./assets/avatar/lore-logo.webp" width="128" alt="Lore"></p>
 <h1 align="center">Lore</h1>
 <p align="center"><em>项目永远不会遗忘的记忆。</em></p>
 
