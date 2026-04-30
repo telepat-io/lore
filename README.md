@@ -1,6 +1,6 @@
 <p align="center"><img src="./assets/avatar/lore-logo.webp" width="128" alt="Lore"></p>
 <h1 align="center">Lore</h1>
-<p align="center"><em>The memory your project never forgets.</em></p>
+<p align="center"><em>Build persistent LLM knowledge bases from any content — compiled markdown wikis, not vector embeddings.</em></p>
 
 <p align="center">
   <a href="https://docs.telepat.io/lore">📖 Docs</a>
@@ -15,16 +15,22 @@
   <a href="https://github.com/telepat-io/lore/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License"></a>
 </p>
 
-Build and maintain a persistent LLM knowledge base from your project content.
+Lore builds persistent LLM knowledge bases from your project content — compiled markdown wikis, not vector embeddings.
 
-Lore turns raw files and URLs into a compiled, navigable markdown wiki that stays useful across sessions.
+Turn raw files, URLs, and transcripts into a navigable wiki organized by an LLM librarian. Ingest once, compile, and your knowledge stays useful across sessions without the retrieval noise of RAG.
 
-## What It Solves
+Built for teams who need their LLMs to retain real architectural context across sessions.
 
-- Persistent knowledge instead of session-by-session reset.
-- Compiled markdown wiki (human-readable, git-friendly).
-- Fast retrieval with backlinks plus SQLite FTS5/BM25 search.
-- Works with mixed sources: docs, code notes, URLs, media transcripts.
+## Features
+
+- **Compiled markdown wikis, not vector embeddings** — Structured, human-readable, git-friendly. No opaque vectors or retrieval noise.
+- **LLM-driven librarian** — An LLM actively organizes and interlinks your knowledge like a full-time research librarian.
+- **Backlinks + FTS5/BM25 search** — Fast, precise retrieval without vector similarity noise. Follow links to adjacent concepts.
+- **Code-driven pipeline** — Deterministic code handles ingestion, compilation, indexing, and graph building. Tokens spent on knowledge, not infrastructure.
+- **Mixed source ingestion** — Docs, code notes, URLs, chat transcripts, and media. Lore normalizes everything into a consistent knowledge structure.
+- **Export everywhere** — Slides, PDF, DOCX, HTML, canvas, GraphML. Your knowledge isn't locked in a proprietary format.
+- **Agent-ready MCP server** — 13 tools over stdio for retrieval, graph diagnostics, and maintenance. Compatible with any MCP host.
+- **Git-friendly & portable** — Your wiki is plain markdown. Commit it, branch it, ship it with your project.
 
 ## Quick Start
 

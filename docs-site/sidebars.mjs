@@ -2,6 +2,7 @@
 const sidebars = {
   docs: [
     'index',
+    'features',
     {
       type: 'category',
       label: 'Getting Started',

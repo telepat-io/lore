@@ -1,6 +1,6 @@
 <p align="center"><img src="./assets/avatar/lore-logo.webp" width="128" alt="Lore"></p>
 <h1 align="center">Lore</h1>
-<p align="center"><em>项目永远不会遗忘的记忆。</em></p>
+<p align="center"><em>从任何内容构建持久 LLM 知识库——编译 Markdown 百科，而非向量嵌入。</em></p>
 
 <p align="center">
   <a href="https://docs.telepat.io/lore">📖 文档</a>
@@ -15,16 +15,22 @@
   <a href="https://github.com/telepat-io/lore/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License"></a>
 </p>
 
-从你的项目内容构建并维护一个持久的 LLM 知识库。
+Lore 从您的项目内容构建持久 LLM 知识库——编译 Markdown 百科，而非向量嵌入。
 
-Lore 将原始文件和 URL 转换为编译后的、可导航的 Markdown 百科，并在多个会话中保持可用。
+将原始文件、URL 和转录内容转化为由 LLM 图书管理员组织的可导航百科。一次摄入，编译后，您的知识在多次会话中保持可用，没有 RAG 的检索噪音。
 
-## 它能解决什么问题
+专为需要 LLM 在跨会话中保留真实架构上下文的团队打造。
 
-- 持久化知识，而非每次会话都重置。
-- 编译后的 Markdown 百科（人类可读、Git 友好）。
-- 通过反向链接和 SQLite FTS5/BM25 搜索实现快速检索。
-- 支持混合来源：文档、代码笔记、URL、媒体字幕。
+## 功能特性
+
+- **编译 Markdown 百科，而非向量嵌入** — 结构化、人类可读、Git 友好。无不透明向量或检索噪音。
+- **LLM 驱动的图书管理员** — LLM 像全职研究图书管理员一样，主动组织和交叉链接您的知识。
+- **反向链接 + FTS5/BM25 搜索** — 快速精准检索，无需向量相似度噪音。通过链接直达相关概念。
+- **代码驱动的工作流** — 确定性代码处理摄入、编译、索引和图构建。Token 用于知识组织，而非基础设施。
+- **混合来源摄入** — 文档、代码笔记、URL、聊天记录、媒体文件。Lore 将其统一为一致的知识结构。
+- **多格式导出** — 幻灯片、PDF、DOCX、HTML、Canvas、GraphML。您的知识不受专有格式限制。
+- **智能体就绪的 MCP 服务器** — 13 个工具通过 stdio 提供检索、图谱诊断和维护。兼容任何 MCP 主机。
+- **Git 友好且可移植** — 您的百科就是纯 Markdown 文件。提交、分支、随项目发布。
 
 ## 快速开始
 

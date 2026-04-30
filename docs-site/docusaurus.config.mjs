@@ -1,7 +1,7 @@
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Lore',
-  tagline: 'Build and maintain persistent LLM knowledge bases from any content.',
+  tagline: 'Build persistent LLM knowledge bases from any content — compiled markdown wikis, not vector embeddings.',
   favicon: 'img/lore-favicon.png',
   url: 'https://docs.telepat.io',
   baseUrl: '/lore/',

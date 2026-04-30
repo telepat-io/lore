@@ -30,7 +30,7 @@ const program = new Command();
 
 program
   .name('lore')
-  .description('Build and maintain persistent LLM knowledge bases from any content.')
+  .description('Build persistent LLM knowledge bases from any content — compiled markdown wikis, not vector embeddings.')
   .version('0.1.0');
 
 program
