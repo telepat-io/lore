@@ -2,7 +2,7 @@
 const config = {
   title: 'Lore',
   tagline: 'Build and maintain persistent LLM knowledge bases from any content.',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/lore-favicon.png',
   url: 'https://docs.telepat.io',
   baseUrl: '/lore/',
   organizationName: 'telepat-io',
