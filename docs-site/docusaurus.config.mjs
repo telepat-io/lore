@@ -42,6 +42,10 @@ const config = {
       },
       navbar: {
         title: 'Lore',
+        logo: {
+          alt: 'Lore Logo',
+          src: 'img/lore-avatar.webp',
+        },
         items: [
           { type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Docs' },
           { href: 'https://github.com/telepat-io/lore', label: 'GitHub', position: 'right' },
