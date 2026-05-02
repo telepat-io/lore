@@ -182,7 +182,7 @@ For **image URLs** (ending in `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`):
 
 For **all other URLs** (web pages, HTML, APIs, etc.):
 
-1. Lore calls the Cloudflare Browser Run `/markdown` endpoint when `LORE_CF_ACCOUNT_ID` and `LORE_CF_TOKEN` are configured — this gives JavaScript-rendered markdown directly.
+1. Lore calls the Cloudflare Browser Run `/markdown` endpoint when `LORE_CF_ACCOUNT_ID` and `LORE_CF_TOKEN` are configured — this gives JavaScript-rendered markdown directly. By default, Lore waits for `networkidle2` (≤2 open connections) before capturing the page. Override with `--cf-wait-until networkidle0` for pages that open persistent connections.
 2. On Cloudflare failure or missing credentials, Lore falls back to Jina `r.jina.ai`.
 
 > **Requirements**: document/image URL ingestion requires the same credentials as local document/image ingestion — a `REPLICATE_API_TOKEN`. Web page ingestion requires `LORE_CF_ACCOUNT_ID` + `LORE_CF_TOKEN` for Cloudflare (Jina is the credential-free fallback).

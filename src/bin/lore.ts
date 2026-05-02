@@ -43,6 +43,7 @@ program
   .command('ingest <path>')
   .description('Ingest a file or URL into the knowledge base')
   .option('--json', 'Output JSON')
+  .option('--cf-wait-until <value>', 'Cloudflare gotoOptions.waitUntil value (default: networkidle2)')
   .action(ingestCommand);
 
 program

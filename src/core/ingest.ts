@@ -132,6 +132,7 @@ export interface IngestOptions {
   logger?: RunLogger;
   sessionMeta?: Record<string, unknown>;
   tags?: string[];
+  cfWaitUntil?: string;
 }
 
 /** Detect format and route to the correct parser, then store in raw/ */
@@ -182,7 +183,7 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
         logger?.stepStart('ingest.parse.url', { input });
         format = 'url';
         rawContent = input;
-        extracted = await parseUrl(input);
+        extracted = await parseUrl(input, { waitUntil: opts.cfWaitUntil });
         logger?.stepEnd('ingest.parse.url');
       }
     }

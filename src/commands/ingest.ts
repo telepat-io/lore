@@ -5,7 +5,7 @@ import { RunLogger } from '../core/logger.js';
 export async function ingestCommand(path: string, opts: OptionValues): Promise<void> {
   const logger = await RunLogger.create(process.cwd(), 'ingest');
   try {
-    const result = await ingest(process.cwd(), path, { logger });
+    const result = await ingest(process.cwd(), path, { logger, cfWaitUntil: opts['cfWaitUntil'] as string | undefined });
     await logger.close('ok', { sha256: result.sha256, format: result.format });
 
     if (opts['json']) {

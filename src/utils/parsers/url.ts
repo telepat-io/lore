@@ -1,11 +1,11 @@
 /** Fetch URL content as markdown via Jina r.jina.ai or Cloudflare Browser Run markdown endpoint */
-export async function parseUrl(url: string): Promise<string> {
+export async function parseUrl(url: string, opts: { waitUntil?: string } = {}): Promise<string> {
   // Check if Cloudflare Browser Rendering credentials are available
   const cfAccountId = process.env['LORE_CF_ACCOUNT_ID'];
   const cfToken = process.env['LORE_CF_TOKEN'];
 
   if (cfAccountId && cfToken) {
-    return fetchWithCloudflare(url, cfAccountId, cfToken);
+    return fetchWithCloudflare(url, cfAccountId, cfToken, opts.waitUntil);
   }
 
   return fetchWithJina(url);
@@ -27,7 +27,7 @@ async function fetchWithJina(url: string): Promise<string> {
   return response.text();
 }
 
-async function fetchWithCloudflare(url: string, accountId: string, token: string): Promise<string> {
+async function fetchWithCloudflare(url: string, accountId: string, token: string, waitUntil = 'networkidle2'): Promise<string> {
   const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/browser-rendering/markdown`;
   const response = await fetch(cfUrl, {
     method: 'POST',
@@ -35,7 +35,7 @@ async function fetchWithCloudflare(url: string, accountId: string, token: string
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, gotoOptions: { waitUntil } }),
   });
 
   if (!response.ok) {

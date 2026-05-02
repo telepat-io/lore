@@ -64,6 +64,27 @@ describe('parseUrl', () => {
     const md = await parseUrl('https://example.com');
 
     expect(md).toBe('# Cloudflare markdown');
-    expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toContain('/browser-rendering/markdown');
+    const [cfUrl, cfInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(cfUrl).toContain('/browser-rendering/markdown');
+    const body = JSON.parse(cfInit.body as string) as { gotoOptions?: { waitUntil?: string } };
+    expect(body.gotoOptions?.waitUntil).toBe('networkidle2');
+  });
+
+  it('sends custom waitUntil when provided', async () => {
+    process.env['LORE_CF_ACCOUNT_ID'] = 'acct';
+    process.env['LORE_CF_TOKEN'] = 'token';
+
+    const fetchMock = jest.fn<(...args: any[]) => Promise<any>>(async () => ({
+      ok: true,
+      json: async () => ({ result: '# CF markdown' }),
+    }));
+    (globalThis as { fetch?: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+
+    const { parseUrl } = await import('../../utils/parsers/url.js');
+    await parseUrl('https://example.com', { waitUntil: 'networkidle0' });
+
+    const [, cfInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(cfInit.body as string) as { gotoOptions?: { waitUntil?: string } };
+    expect(body.gotoOptions?.waitUntil).toBe('networkidle0');
   });
 });

@@ -32,6 +32,7 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 - `--json`: structured machine output on stdout.
 - human mode: operational summaries on stderr; primary text output on stdout where relevant.
 - `lore ingest --json`: includes duplicate indicator when content already exists.
+- `lore ingest --cf-wait-until <value>`: override the Cloudflare Browser Run `gotoOptions.waitUntil` value (default: `networkidle2`). Use `networkidle0` for pages that need every network request to settle.
 - `lore compile`: uses hash-based incremental compile, skipping unchanged extracted content via `manifest.json` `extractedHash` values.
 - `lore compile --force`: bypasses hash skipping and recompiles all valid raw entries.
 - `lore compile --concepts-only`: backfills provenance for existing articles without recompiling. Rebuilds `concepts.json` and search index.
