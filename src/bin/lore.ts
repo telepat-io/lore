@@ -58,6 +58,7 @@ program
   .command('compile')
   .description('Compile raw sources into wiki articles using LLM')
   .option('--force', 'Recompile all, ignoring manifest')
+  .option('--concepts-only', 'Regenerate concepts and index without modifying articles')
   .option('--json', 'Output JSON')
   .action(compileCommand);
 

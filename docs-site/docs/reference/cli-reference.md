@@ -13,7 +13,7 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 | `lore` | Launch interactive TUI |
 | `lore init` | Initialize `.lore/` repository |
 | `lore ingest <path\|url>` | Ingest file or URL into `raw/` |
-| `lore compile [--force]` | Compile changed raw sources into wiki articles (hash-based incremental, lock-guarded) |
+| `lore compile [--force] [--concepts-only]` | Compile changed raw sources into wiki articles (6-step pipeline, hash-based incremental, lock-guarded) |
 | `lore index [--repair]` | Rebuild FTS5 index + `index.md` (optional manifest repair from `raw/`) |
 | `lore query "<q>" [--no-file-back] [--normalize-question]` | BFS/DFS + LLM Q&A |
 | `lore search "<term>" [--limit N]` | FTS5/BM25 search |
@@ -34,6 +34,7 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 - `lore ingest --json`: includes duplicate indicator when content already exists.
 - `lore compile`: uses hash-based incremental compile, skipping unchanged extracted content via `manifest.json` `extractedHash` values.
 - `lore compile --force`: bypasses hash skipping and recompiles all valid raw entries.
+- `lore compile --concepts-only`: backfills provenance for existing articles without recompiling. Rebuilds `concepts.json` and search index.
 - `lore compile`: guarded by `.lore/compile.lock` to prevent concurrent runs.
 - `lore index --repair`: reconstructs missing manifest entries before rebuild.
 - `lore lint --json`: includes line-aware `diagnostics[]` entries with `rule`, `severity`, `file`, optional `line`, and `message`.

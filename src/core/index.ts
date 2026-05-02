@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { requireRepo } from './repo.js';
 import { openDb, resetDb } from './db.js';
+import { stripProvenanceForSearch } from '../utils/provenance.js';
 
 const LOW_SIGNAL_ENTITY_TOKENS = new Set([
   'a',
@@ -167,8 +168,11 @@ function parseArticle(slug: string, content: string): ParsedArticle {
   let body = content;
   const tags: string[] = [];
 
+  // Strip provenance comments from content before parsing
+  const strippedContent = stripProvenanceForSearch(content);
+
   // Extract YAML frontmatter
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  const fmMatch = strippedContent.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (fmMatch) {
     const frontmatter = fmMatch[1]!;
     body = fmMatch[2]!;
@@ -190,11 +194,11 @@ function parseArticle(slug: string, content: string): ParsedArticle {
     if (h1Match) title = h1Match[1]!;
   }
 
-  // Extract [[wiki-links]]
+  // Extract [[wiki-links]] from stripped content
   const linkPattern = /\[\[([^\]]+)\]\]/g;
   const links = new Set<string>();
   let match;
-  while ((match = linkPattern.exec(content)) !== null) {
+  while ((match = linkPattern.exec(strippedContent)) !== null) {
     const rawTarget = match[1]?.trim() ?? '';
     const slug = slugify(rawTarget);
     if (shouldKeepLinkTarget(rawTarget, slug)) {

@@ -32,6 +32,7 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      'max-lines': ['error', { max: 800, skipBlankLines: false, skipComments: false }],
     },
   },
 );

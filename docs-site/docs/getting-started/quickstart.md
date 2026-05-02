@@ -32,7 +32,9 @@ Expected result: new `.lore/raw/<sha256>/` entries with `extracted.md` and `meta
 lore compile
 ```
 
-Expected result: `.lore/wiki/articles/*.md`, updated `.lore/wiki/index.md`, refreshed search/link index.
+Expected result: `.lore/wiki/articles/*.md`, updated `.lore/wiki/index.md`, refreshed search/link index. Articles carry inline provenance markers tracking which sources contributed to each line.
+
+After upgrading from an older Lore version, run `lore compile --concepts-only` to backfill provenance for existing articles.
 
 ## 4) Search and ask
 

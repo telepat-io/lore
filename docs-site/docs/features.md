@@ -32,7 +32,9 @@ Lore compiles your content into structured markdown wikis. Read them. Edit them.
 
 ## LLM-Driven Librarian
 
-Lore doesn't just index your content — an LLM actively organizes and interlinks it. New concepts are named, categorized, and cross-referenced. Orphaned pages are flagged. Ambiguities are surfaced. It's like having a full-time research librarian maintaining your project's institutional knowledge.
+Lore doesn't just index your content — an LLM actively organizes and interlinks it. A 6-step compile pipeline extracts concepts, matches them to existing articles, generates line-level editing operations, and applies them with full provenance tracking. Every sentence knows where it came from.
+
+New concepts are named, categorized, and cross-referenced. Orphaned pages are flagged. Ambiguities are surfaced. Multi-article edits and splits are handled automatically. It's like having a full-time research librarian maintaining your project's institutional knowledge.
 
 ```bash
 lore init           # create a lore repo in your project
@@ -59,6 +61,18 @@ lore path <concept>      # show all paths to a concept
 Lore's ingestion, compilation, indexing, and graph building are deterministic code. Your tokens go toward knowledge organization — understanding and linking concepts — not toward infrastructure overhead. No context windows burned on file I/O. No tokens wasted on serialization.
 
 Incremental compilation skips unchanged content via `manifest.json`. A repository lock prevents overlapping runs. Every stage is optimized for token efficiency.
+
+---
+
+## Paragraph-Level Provenance
+
+Every article tracks exactly which sources contributed to which lines. Inline `<!-- sources:HASH(CONFIDENCE) -->` comments mark each paragraph's origin, while a cumulative `## References` section records all sources ever merged. Provenance is organic — articles acquire it on first merge — with a `--concepts-only` flag available for backfilling existing wikis.
+
+```markdown
+The auth service uses JWT tokens. <!-- sources:abc123(extracted) def456(inferred) -->
+```
+
+When the LLM reads articles for updates, provenance annotations are stripped so it sees clean, numbered text. The system manages provenance automatically — you just edit knowledge.
 
 ---
 

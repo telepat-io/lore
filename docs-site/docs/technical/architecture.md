@@ -8,16 +8,18 @@ Lore combines markdown-first knowledge storage with an operational pipeline for 
 
 ## 4-Layer Wiki
 
-1. **Index** (`wiki/index.md`) -- always consulted first
-2. **Articles** (`wiki/articles/*.md`) -- concept articles with backlinks
-3. **Derived** (`wiki/derived/`) -- Q&A answers, slides, charts
-4. **Assets** (`wiki/assets/`) -- local images
+1. **Index** (`wiki/index.md`) — always consulted first
+2. **Articles** (`wiki/articles/*.md`) — concept articles with backlinks and provenance
+3. **Derived** (`wiki/derived/`) — Q&A answers, slides, charts
+4. **Assets** (`wiki/assets/`) — local images
 
 Supporting state lives in `.lore/`:
 
 - `raw/` normalized ingest artifacts keyed by content hash
 - `manifest.json` source-to-raw tracking, compile timestamps, extracted hashes
 - `wiki/concepts.json` normalized concept metadata generated after compile
+- `wiki/concepts/` per-concept detail pages (optional)
+- `wiki/deprecated/` soft-deleted articles retained for audit
 - `db.sqlite` FTS/backlink database
 - `compile.lock` active compile mutex file
 
@@ -26,18 +28,20 @@ Supporting state lives in `.lore/`:
 | Path | Purpose |
 |---|---|
 | `.lore/raw/` | Source-derived extracted artifacts keyed by hash |
-| `.lore/wiki/articles/` | Compiled concept pages |
+| `.lore/wiki/articles/` | Compiled concept pages with provenance |
+| `.lore/wiki/deprecated/` | Soft-deleted articles (audit trail) |
+| `.lore/wiki/index.md` | Canonical topic index |
+| `.lore/wiki/concepts.json` | Concept index with aliases/tags/confidence |
 | `.lore/wiki/derived/qa/` | Filed query answers |
-| `.lore/wiki/concepts.json` | Canonical concept index with aliases/tags/confidence |
 | `.lore/db.sqlite` | FTS and link graph tables |
 | `.lore/logs/` | JSONL command run logs |
 
 ## 4-Phase Pipeline
 
-1. **Ingest** -- `raw/` populated with `extracted.md` + `meta.json`
-2. **Compile** -- `wiki/articles/` written, backlinks woven, `wiki/concepts.json` regenerated
-3. **Query** -- Q&A via BFS/DFS traversal, filed to `derived/qa/`
-4. **Lint** -- orphans, gaps, ambiguous claims, and line-aware diagnostics surfaced
+1. **Ingest** — `raw/` populated with `extracted.md` + `meta.json`
+2. **Compile** — 6-step pipeline: diff → extract concepts → match → generate ops → apply → reindex
+3. **Query** — Q&A via BFS/DFS traversal, filed to `derived/qa/`
+4. **Lint** — orphans, gaps, ambiguous claims, and line-aware diagnostics surfaced
 
 Operationally, these phases are idempotent and can be re-run incrementally.
 
@@ -47,20 +51,84 @@ Compile is hash-incremental by default: unchanged extracted content is skipped b
 
 ```mermaid
 flowchart LR
-	A[Ingest] --> B[Raw artifacts + manifest]
-	B --> C[Compile]
-	C --> D[Index rebuild + concepts]
-	D --> E[Search and query]
-	D --> F[Lint diagnostics]
+    A[Ingest] --> B[Raw artifacts + manifest]
+    B --> C[Compile]
+    C --> D[Index rebuild + concepts]
+    D --> E[Search and query]
+    D --> F[Lint diagnostics]
 ```
 
-### Compile Reliability Controls
+### Compile Sub-Pipeline
+
+```mermaid
+flowchart TD
+    A[Raw sources] --> B{Diff: changed?}
+    B -->|No| C[Skip]
+    B -->|Yes| D[Extract Concepts]
+    D --> E{Concepts?}
+    E -->|No| F[Batch Create]
+    E -->|Yes| G[Match to articles]
+    G --> H[Generate Operations]
+    H --> I[Apply to disk]
+    F --> I
+    I --> J[Reindex + concepts.json]
+```
+
+## Provenance Model
+
+Every article tracks which sources contributed to which lines. Two mechanisms:
+
+### Inline Provenance
+
+Lines carry `<!-- sources:HASH(CONFIDENCE) -->` comments:
+
+```markdown
+The auth service uses JWT. <!-- sources:abc123(extracted) def456(inferred) -->
+```
+
+When the LLM reads articles for matching, provenance comments are stripped. The LLM sees clean, numbered lines.
+
+### Cumulative References
+
+Every article ends with a `## References` section listing all source hashes ever merged:
+
+```markdown
+## References
+- abc123 (extracted)
+- def456 (inferred)
+```
+
+This section is system-managed and hidden from LLM context.
+
+### Related Section
+
+`## Related` is auto-generated from `[[wiki-links]]` found in the article body.
+
+## Operation Model
+
+The LLM outputs line-level operations (JSON). Each operation carries a `sources` array for provenance:
+
+| Operation | Effect |
+|---|---|
+| `replace` | Replace one line |
+| `insert-after` | Insert after a target line |
+| `delete-range` | Remove lines (validated: start ≤ end) |
+| `replace-range` | Replace a span of lines |
+| `split` | Split article into two |
+| `append-source` | Add sources to existing lines (no content change) |
+| `soft-delete` | Move article to deprecated |
+
+Operations are applied sequentially per source. Line references use `¶` (pilcrow) prefixes to distinguish from YAML line numbers.
+
+## Compile Reliability Controls
 
 | Control | Purpose |
 |---|---|
 | PID lock file (`compile.lock`) | Prevent overlapping compile runs |
 | Hash-based skipping | Avoid recompiling unchanged extracted content |
-| Batch-size retry reduction | Recover from truncation/invalid outputs |
+| Per-source retry (1 attempt) | Recover from malformed LLM output |
+| Zero-concept skip | Sources without extractable concepts go to batch create |
+| `start > end` validation | Range operations reject invalid spans |
 | Post-compile index rebuild | Keep FTS/graph state aligned with article set |
 
 ## Ingest and Metadata Flow
@@ -114,6 +182,8 @@ Index rebuild can run in standard or repair mode:
 
 Backlink indexing filters low-signal wiki-link targets (for example stopword-only links) to reduce graph noise.
 
+Provenance comments are stripped from article bodies before FTS indexing so they do not pollute search results.
+
 Guardrail benefits:
 
 - fewer noisy edges in concept graph
@@ -131,8 +201,8 @@ The MCP server exposes maintenance and diagnostics tools for automation loops, i
 
 ## SQLite Schema
 
-- `fts` -- FTS5 virtual table (slug, title, body) with Porter stemming
-- `links` -- backlinks graph (from_slug, to_slug)
+- `fts` — FTS5 virtual table (slug, title, body) with Porter stemming
+- `links` — backlinks graph (from_slug, to_slug)
 
 ## Related Docs
 

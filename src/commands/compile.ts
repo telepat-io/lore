@@ -5,7 +5,7 @@ import { RunLogger } from '../core/logger.js';
 export async function compileCommand(opts: OptionValues): Promise<void> {
   const logger = await RunLogger.create(process.cwd(), 'compile');
   try {
-    const result = await compile(process.cwd(), { force: !!opts['force'], logger });
+    const result = await compile(process.cwd(), { force: !!opts['force'], conceptsOnly: !!opts['conceptsOnly'], logger });
     await logger.close('ok', { articlesWritten: result.articlesWritten, rawProcessed: result.rawProcessed });
 
     if (opts['json']) {

@@ -25,6 +25,7 @@ Built for teams who need their LLMs to retain real architectural context across 
 
 - **Compiled markdown wikis, not vector embeddings** — Structured, human-readable, git-friendly. No opaque vectors or retrieval noise.
 - **LLM-driven librarian** — An LLM actively organizes and interlinks your knowledge like a full-time research librarian.
+- **Paragraph-level provenance** — Every sentence traces back to its source. Inline annotations tell you exactly which documents contributed to each line.
 - **Backlinks + FTS5/BM25 search** — Fast, precise retrieval without vector similarity noise. Follow links to adjacent concepts.
 - **Code-driven pipeline** — Deterministic code handles ingestion, compilation, indexing, and graph building. Tokens spent on knowledge, not infrastructure.
 - **Mixed source ingestion** — Docs, code notes, URLs, chat transcripts, and media. Lore normalizes everything into a consistent knowledge structure.

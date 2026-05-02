@@ -32,6 +32,9 @@ flowchart TD
 | No QA file created from query | `--no-file-back` was used | Omit `--no-file-back` or check `.lore/wiki/derived/qa/` |
 | Angela fails after install | Git history is too shallow or no diff between last two commits | Ensure at least two commits and rerun `lore angela run` manually |
 | Export fails on `pdf` | Puppeteer/browser dependency issue | Reinstall dependencies and retry `lore export pdf` |
+| Articles lack provenance markers | Articles were compiled before provenance was introduced | Run `lore compile --concepts-only` to backfill |
+| Sources consistently produce zero concepts | Content too abstract or short for LLM concept extraction | Review raw content quality; re-ingest with richer source material |
+| Soft-deleted articles reappear | Article was re-created by a later compile from fresh sources | Expected behavior; use `--force` recompile if needed |
 
 ## Recovery Playbooks
 

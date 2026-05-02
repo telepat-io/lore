@@ -4,18 +4,39 @@ import path from 'path';
 import { createHash } from 'crypto';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-const mockStreamChat = jest.fn<(...args: any[]) => any>();
+const mockExtractConcepts = jest.fn<(...args: any[]) => any>();
+const mockMatchSourceToArticles = jest.fn<(...args: any[]) => any>();
+const mockGenerateOperations = jest.fn<(...args: any[]) => any>();
+const mockGenerateCreates = jest.fn<(...args: any[]) => any>();
 const mockRebuildIndex = jest.fn<(...args: any[]) => any>();
+const mockWriteConceptsIndex = jest.fn<(...args: any[]) => any>().mockResolvedValue({ concepts: [] });
+const mockLoadArticleContent = jest.fn<(...args: any[]) => any>().mockResolvedValue([]);
 
 async function loadCompile() {
   jest.resetModules();
 
-  jest.unstable_mockModule('../../core/llm.js', () => ({
-    streamChat: mockStreamChat,
+  jest.unstable_mockModule('../../core/conceptExtract.js', () => ({
+    extractConcepts: mockExtractConcepts,
+  }));
+
+  jest.unstable_mockModule('../../core/articleMatch.js', () => ({
+    matchSourceToArticles: mockMatchSourceToArticles,
+    generateOperations: mockGenerateOperations,
+    generateCreates: mockGenerateCreates,
+    loadArticleContent: mockLoadArticleContent,
   }));
 
   jest.unstable_mockModule('../../core/index.js', () => ({
     rebuildIndex: mockRebuildIndex,
+  }));
+
+  jest.unstable_mockModule('../../core/concepts.js', () => ({
+    writeConceptsIndex: mockWriteConceptsIndex,
+  }));
+
+  jest.unstable_mockModule('../../core/llm.js', () => ({
+    streamChat: jest.fn(),
+    createClient: jest.fn(),
   }));
 
   return import('../../core/compile.js');
@@ -28,26 +49,6 @@ async function writeRawEntry(root: string, sha: string, title: string, extracted
   await fs.writeFile(path.join(dir, 'meta.json'), JSON.stringify({ title }));
 }
 
-function article(title: string): string {
-  return [
-    '---',
-    `title: "${title}"`,
-    'tags: [test]',
-    'sources: [fixture]',
-    'updated: 2026-04-07T00:00:00Z',
-    'confidence: extracted',
-    '---',
-    '',
-    `# ${title}`,
-    '',
-    'Body.',
-    '',
-    '## Related',
-    '',
-    '- [[Other]]',
-  ].join('\n');
-}
-
 function sha256(content: string): string {
   return createHash('sha256').update(content).digest('hex');
 }
@@ -56,82 +57,74 @@ let tmpDir: string;
 
 beforeEach(async () => {
   tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'lore-compile-test-'));
-  mockStreamChat.mockReset();
+  mockExtractConcepts.mockReset();
+  mockMatchSourceToArticles.mockReset();
+  mockGenerateOperations.mockReset();
+  mockGenerateCreates.mockReset();
   mockRebuildIndex.mockReset();
+  mockWriteConceptsIndex.mockReset().mockResolvedValue({ concepts: [] });
+  mockLoadArticleContent.mockReset().mockResolvedValue([]);
 
   await fs.mkdir(path.join(tmpDir, '.lore', 'raw'), { recursive: true });
   await fs.mkdir(path.join(tmpDir, '.lore', 'wiki', 'articles'), { recursive: true });
+  await fs.mkdir(path.join(tmpDir, '.lore', 'wiki', 'deprecated'), { recursive: true });
   await fs.writeFile(path.join(tmpDir, '.lore', 'manifest.json'), '{}');
 });
 
 describe('compile', () => {
-  it('retries with smaller batch when output is structurally truncated', async () => {
+  it('creates articles for unmatched sources', async () => {
     await writeRawEntry(tmpDir, 'a1', 'Alpha source', 'alpha content');
-    await writeRawEntry(tmpDir, 'b2', 'Beta source', 'beta content');
 
-    mockStreamChat
-      .mockResolvedValueOnce({
-        content: '---\ntitle: "Brain-Computer Interface"\ntags: [technology,',
-        tokensUsed: 100,
-        finishReason: null,
-        wasTruncated: false,
-      })
-      .mockResolvedValueOnce({
-        content: article('Alpha Concept'),
-        tokensUsed: 120,
-        finishReason: 'stop',
-        wasTruncated: false,
-      })
-      .mockResolvedValueOnce({
-        content: article('Beta Concept'),
-        tokensUsed: 120,
-        finishReason: 'stop',
-        wasTruncated: false,
-      });
+    mockExtractConcepts.mockResolvedValue([]);
+    mockMatchSourceToArticles.mockResolvedValue([]);
+    mockGenerateCreates.mockResolvedValue([
+      {
+        action: 'create',
+        filename: 'alpha-concept.md',
+        content: '---\ntitle: "Alpha Concept"\n---\n\n# Alpha Concept\n\nalpha content.',
+        sources: ['a1'],
+      },
+    ]);
 
     const { compile } = await loadCompile();
     const result = await compile(tmpDir);
 
-    expect(result.articlesWritten).toBe(2);
-    expect(mockStreamChat).toHaveBeenCalledTimes(3);
-    await expect(fs.access(path.join(tmpDir, '.lore', 'wiki', 'articles', 'alpha-concept.md'))).resolves.toBeUndefined();
-    await expect(fs.access(path.join(tmpDir, '.lore', 'wiki', 'articles', 'beta-concept.md'))).resolves.toBeUndefined();
-    await expect(fs.access(path.join(tmpDir, '.lore', 'wiki', 'articles', 'untitled.md'))).rejects.toThrow();
+    expect(result.articlesWritten).toBe(1);
+    expect(result.rawProcessed).toBe(1);
+    expect(mockRebuildIndex).toHaveBeenCalledTimes(1);
 
-    const conceptsRaw = await fs.readFile(path.join(tmpDir, '.lore', 'wiki', 'concepts.json'), 'utf-8');
-    const concepts = JSON.parse(conceptsRaw) as { concepts: Array<{ slug: string; canonical: string; aliases: string[] }> };
-    expect(concepts.concepts).toEqual(expect.arrayContaining([
-      expect.objectContaining({ slug: 'alpha-concept', canonical: 'Alpha Concept' }),
-      expect.objectContaining({ slug: 'beta-concept', canonical: 'Beta Concept' }),
-    ]));
-    expect(concepts.concepts.find(c => c.slug === 'alpha-concept')?.aliases).toContain('alpha-concept');
-
-    const manifestRaw = await fs.readFile(path.join(tmpDir, '.lore', 'manifest.json'), 'utf-8');
-    const manifest = JSON.parse(manifestRaw) as Record<string, { compiledAt?: string }>;
-    expect(manifest['a1']?.compiledAt).toBeDefined();
-    expect(manifest['b2']?.compiledAt).toBeDefined();
+    const files = await fs.readdir(path.join(tmpDir, '.lore', 'wiki', 'articles'));
+    expect(files).toContain('alpha-concept.md');
   });
 
-  it('fails on truncated single-entry response without writing partial files', async () => {
-    await writeRawEntry(tmpDir, 'c3', 'Gamma source', 'gamma content');
+  it('edits existing articles when matched', async () => {
+    await writeRawEntry(tmpDir, 'b2', 'Beta source', 'beta content');
 
-    mockStreamChat.mockResolvedValue({
-      content: '---\ntitle: "Gamma"\ntags: [broken,',
-      tokensUsed: 100,
-      finishReason: null,
-      wasTruncated: false,
-    });
+    const existingArticle = '---\ntitle: "Beta"\n---\n\n# Beta\n\nOld content.';
+    await fs.writeFile(
+      path.join(tmpDir, '.lore', 'wiki', 'articles', 'beta.md'),
+      existingArticle,
+    );
+
+    mockExtractConcepts.mockResolvedValue([
+      { name: 'Beta', description: 'Beta concept', confidence: 'extracted', for_source: 'source_1' },
+    ]);
+    mockMatchSourceToArticles.mockResolvedValue(['beta']);
+    mockGenerateOperations.mockResolvedValue([
+      {
+        action: 'edit',
+        target: 'beta.md',
+        operations: [
+          { op: 'replace', line: '¶5', content: 'Updated beta content.', sources: ['b2'], confidence: 'extracted' },
+        ],
+      },
+    ]);
 
     const { compile } = await loadCompile();
+    const result = await compile(tmpDir);
 
-    await expect(compile(tmpDir)).rejects.toThrow('unterminated YAML frontmatter');
-
-    const articleFiles = await fs.readdir(path.join(tmpDir, '.lore', 'wiki', 'articles'));
-    expect(articleFiles).toEqual([]);
-
-    const manifestRaw = await fs.readFile(path.join(tmpDir, '.lore', 'manifest.json'), 'utf-8');
-    const manifest = JSON.parse(manifestRaw) as Record<string, { compiledAt?: string }>;
-    expect(manifest['c3']?.compiledAt).toBeUndefined();
+    expect(result.articlesWritten).toBe(1);
+    expect(mockRebuildIndex).toHaveBeenCalledTimes(1);
   });
 
   it('skips entries already compiled at the same extracted content hash', async () => {
@@ -150,7 +143,7 @@ describe('compile', () => {
     const result = await compile(tmpDir);
 
     expect(result).toEqual({ articlesWritten: 0, articlesSkipped: 1, rawProcessed: 0 });
-    expect(mockStreamChat).not.toHaveBeenCalled();
+    expect(mockExtractConcepts).not.toHaveBeenCalled();
     expect(mockRebuildIndex).not.toHaveBeenCalled();
   });
 
@@ -165,22 +158,25 @@ describe('compile', () => {
           compiledAt: '2026-04-08T00:00:00.000Z',
           extractedHash: 'outdated-hash',
         },
-      }, null, 2)
+      }, null, 2),
     );
 
-    mockStreamChat.mockResolvedValue({
-      content: article('Epsilon Concept'),
-      tokensUsed: 120,
-      finishReason: 'stop',
-      wasTruncated: false,
-    });
+    mockExtractConcepts.mockResolvedValue([]);
+    mockMatchSourceToArticles.mockResolvedValue([]);
+    mockGenerateCreates.mockResolvedValue([
+      {
+        action: 'create',
+        filename: 'epsilon-concept.md',
+        content: '---\ntitle: "Epsilon Concept"\n---\n\n# Epsilon Concept\n\nfresh content.',
+        sources: ['e5'],
+      },
+    ]);
 
     const { compile } = await loadCompile();
     const result = await compile(tmpDir);
 
     expect(result.articlesWritten).toBe(1);
     expect(result.rawProcessed).toBe(1);
-    expect(mockStreamChat).toHaveBeenCalledTimes(1);
     expect(mockRebuildIndex).toHaveBeenCalledTimes(1);
 
     const manifestRaw = await fs.readFile(path.join(tmpDir, '.lore', 'manifest.json'), 'utf-8');
@@ -196,7 +192,71 @@ describe('compile', () => {
     const { compile } = await loadCompile();
     await expect(compile(tmpDir)).rejects.toThrow('Another compile is already running');
 
-    expect(mockStreamChat).not.toHaveBeenCalled();
+    expect(mockExtractConcepts).not.toHaveBeenCalled();
     expect(mockRebuildIndex).not.toHaveBeenCalled();
+  });
+
+  it('soft-deletes articles when operation specifies', async () => {
+    await writeRawEntry(tmpDir, 'g7', 'Gamma source', 'gamma content');
+
+    await fs.writeFile(
+      path.join(tmpDir, '.lore', 'wiki', 'articles', 'old-article.md'),
+      '---\ntitle: "Old"\n---\n\n# Old\n\nOld content.',
+    );
+
+    mockExtractConcepts.mockResolvedValue([
+      { name: 'Old', description: 'Old article', confidence: 'extracted', for_source: 'source_1' },
+    ]);
+    mockMatchSourceToArticles.mockResolvedValue(['old-article']);
+    mockGenerateOperations.mockResolvedValue([
+      { action: 'soft-delete', target: 'old-article.md' },
+    ]);
+
+    const { compile } = await loadCompile();
+    await compile(tmpDir);
+
+    const deprecatedFiles = await fs.readdir(path.join(tmpDir, '.lore', 'wiki', 'deprecated'));
+    expect(deprecatedFiles).toContain('old-article.md');
+  });
+
+  it('skips sources with zero extracted concepts as unmatched', async () => {
+    await writeRawEntry(tmpDir, 'h8', 'No concepts', 'no conceptual content');
+
+    mockExtractConcepts.mockResolvedValue([]);
+    mockGenerateCreates.mockResolvedValue([
+      {
+        action: 'create',
+        filename: 'no-concepts.md',
+        content: '---\ntitle: "No Concepts"\n---\n\n# No Concepts\n\nno conceptual content.',
+        sources: ['h8'],
+      },
+    ]);
+
+    const { compile } = await loadCompile();
+    const result = await compile(tmpDir);
+
+    expect(result.rawProcessed).toBe(1);
+    expect(mockMatchSourceToArticles).not.toHaveBeenCalled();
+    expect(mockGenerateCreates).toHaveBeenCalled();
+  });
+});
+
+describe('compile --concepts-only', () => {
+  it('regenerates concepts without modifying articles', async () => {
+    await fs.writeFile(
+      path.join(tmpDir, '.lore', 'wiki', 'articles', 'existing.md'),
+      '---\ntitle: Existing\n---\n\n# Existing\n\nContent.',
+    );
+
+    mockRebuildIndex.mockResolvedValue({ articlesIndexed: 1, linksIndexed: 0, repairedManifestEntries: 0 });
+    mockWriteConceptsIndex.mockResolvedValue({ concepts: [{ slug: 'existing', canonical: 'Existing', aliases: [], tags: [], confidence: 'unknown' }] });
+
+    const { compile } = await loadCompile();
+    const result = await compile(tmpDir, { conceptsOnly: true });
+
+    expect(result.articlesWritten).toBe(0);
+    expect(result.rawProcessed).toBe(0);
+    expect(mockRebuildIndex).toHaveBeenCalledTimes(1);
+    expect(mockWriteConceptsIndex).toHaveBeenCalledTimes(1);
   });
 });

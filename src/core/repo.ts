@@ -56,6 +56,7 @@ export async function initRepo(cwd: string): Promise<InitResult> {
   await fs.mkdir(path.join(lorePath, 'wiki', 'assets'), { recursive: true });
   await fs.mkdir(path.join(lorePath, 'wiki', 'canvas'), { recursive: true });
   await fs.mkdir(path.join(lorePath, 'exports'), { recursive: true });
+  await fs.mkdir(path.join(lorePath, 'wiki', 'deprecated'), { recursive: true });
 
   const configPath = path.join(lorePath, 'config.json');
   try {
