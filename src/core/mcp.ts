@@ -6,11 +6,13 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { z } from 'zod';
 import { requireRepo } from './repo.js';
 import { search, findPath } from './search.js';
-import { query } from './query.js';
+import { query, explain } from './query.js';
 import { lintWiki } from './lint.js';
 import { openDb } from './db.js';
 import { hashContent } from '../utils/hash.js';
 import { rebuildIndex } from './index.js';
+import { ingest } from './ingest.js';
+import { compile } from './compile.js';
 
 interface MpcToolDefinition {
   name: string;
@@ -32,6 +34,11 @@ export const MCP_TOOLS: MpcToolDefinition[] = [
     name: 'ask',
     description: 'Answer a question using the wiki knowledge base',
     inputSchema: { type: 'object', properties: { question: { type: 'string', description: 'Question to answer' } }, required: ['question'] },
+  },
+  {
+    name: 'explain',
+    description: 'Provide a deep explanation of a concept using related wiki context',
+    inputSchema: { type: 'object', properties: { concept: { type: 'string', description: 'Concept to explain' } }, required: ['concept'] },
   },
   {
     name: 'list_articles',
@@ -71,6 +78,29 @@ export const MCP_TOOLS: MpcToolDefinition[] = [
       properties: {
         content: { type: 'string', description: 'Raw content to hash and check' },
         sha256: { type: 'string', description: 'Known SHA-256 hash to check directly' },
+      },
+    },
+  },
+  {
+    name: 'ingest',
+    description: 'Ingest a file path or URL into .lore/raw',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        input: { type: 'string', description: 'File path (relative to cwd) or URL' },
+        tags: { type: 'array', description: 'Optional user tags for this source' },
+      },
+      required: ['input'],
+    },
+  },
+  {
+    name: 'compile',
+    description: 'Compile raw sources into wiki articles',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        force: { type: 'boolean', description: 'Recompile all extracted sources' },
+        conceptsOnly: { type: 'boolean', description: 'Only refresh concepts/index without article updates' },
       },
     },
   },
@@ -135,6 +165,12 @@ export async function startMcpServer(cwd: string): Promise<void> {
         const question = z.string().parse((args as Record<string, unknown>)['question']);
         const result = await query(cwd, question, { fileBack: false });
         return { content: [{ type: 'text' as const, text: result.answer }] };
+      }
+
+      case 'explain': {
+        const concept = z.string().parse((args as Record<string, unknown>)['concept']);
+        const result = await explain(cwd, concept);
+        return { content: [{ type: 'text' as const, text: result.explanation }] };
       }
 
       case 'list_articles': {
@@ -206,6 +242,31 @@ export async function startMcpServer(cwd: string): Promise<void> {
             text: JSON.stringify(duplicateResult, null, 2),
           }],
         };
+      }
+
+      case 'ingest': {
+        const payload = z.object({
+          input: z.string().min(1),
+          tags: z.array(z.string().min(1)).optional(),
+        }).parse((args ?? {}) as Record<string, unknown>);
+
+        const result = await ingest(cwd, payload.input, {
+          ...(payload.tags ? { tags: payload.tags } : {}),
+        });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      }
+
+      case 'compile': {
+        const payload = z.object({
+          force: z.boolean().optional(),
+          conceptsOnly: z.boolean().optional(),
+        }).parse((args ?? {}) as Record<string, unknown>);
+
+        const result = await compile(cwd, {
+          force: payload.force,
+          conceptsOnly: payload.conceptsOnly,
+        });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       }
 
       case 'list_raw_tags': {

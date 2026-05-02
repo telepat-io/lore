@@ -112,17 +112,18 @@ Presentations, documents, visual graphs — your knowledge goes where you need i
 
 ## Agent-Ready MCP Server
 
-Lore ships with a first-class MCP server exposing 13 tools over stdio:
+Lore ships with a first-class MCP server exposing 16 tools over stdio:
 
-- **Retrieval:** `search`, `ask`, `list_articles`, `get_article`, `get_neighbors`, `path`
+- **Retrieval:** `search`, `ask`, `explain`, `list_articles`, `get_article`, `get_neighbors`, `path`
 - **Graph diagnostics:** `graph_stats`, `lint_summary`, `list_orphans`, `list_gaps`, `list_ambiguous`
+- **Write:** `ingest`, `compile`
 - **Maintenance:** `check_duplicate`, `list_raw_tags`, `rebuild_index`
 
 ```bash
 lore mcp   # start MCP server for Claude Code, Cursor, VS Code Copilot, or any MCP host
 ```
 
-Recommended agent loop: `list_orphans` → `list_gaps` → `list_ambiguous` → edits/compile → `rebuild_index(repair=true)`.
+Recommended agent loop: `list_orphans` → `list_gaps` → `list_ambiguous` → `ingest`/`compile` → `rebuild_index(repair=true)`.
 
 ---
 

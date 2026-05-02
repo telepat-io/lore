@@ -70,7 +70,7 @@ The docs site follows your OS/browser color scheme by default (`prefers-color-sc
 - Duplicate ingest short-circuits repeated sources for faster, cleaner pipelines.
 - Index rebuild supports repair mode (`lore index --repair`) for manifest recovery.
 - Query supports optional typo normalization while preserving technical tokens.
-- MCP toolset now includes duplicate checks, taxonomy summaries, and lint-focused maintenance tools.
+- MCP toolset now includes ingest/compile write tools, duplicate checks, taxonomy summaries, and lint-focused maintenance tools.
 
 ## Fast Maintenance Loop
 

@@ -6,6 +6,9 @@ const mockRebuildIndex = jest.fn<(...args: any[]) => any>();
 const mockSearch = jest.fn<(...args: any[]) => any>();
 const mockFindPath = jest.fn<(...args: any[]) => any>();
 const mockQuery = jest.fn<(...args: any[]) => any>();
+const mockExplain = jest.fn<(...args: any[]) => any>();
+const mockIngest = jest.fn<(...args: any[]) => any>();
+const mockCompile = jest.fn<(...args: any[]) => any>();
 
 const mockConnect = jest.fn<(...args: any[]) => any>();
 
@@ -65,6 +68,15 @@ async function loadMcpModule() {
 
   jest.unstable_mockModule('../../core/query.js', () => ({
     query: mockQuery,
+    explain: mockExplain,
+  }));
+
+  jest.unstable_mockModule('../../core/ingest.js', () => ({
+    ingest: mockIngest,
+  }));
+
+  jest.unstable_mockModule('../../core/compile.js', () => ({
+    compile: mockCompile,
   }));
 
   return import('../../core/mcp.js');
@@ -80,6 +92,9 @@ describe('startMcpServer integration', () => {
     mockSearch.mockReset();
     mockFindPath.mockReset();
     mockQuery.mockReset();
+    mockExplain.mockReset();
+    mockIngest.mockReset();
+    mockCompile.mockReset();
 
     mockRequireRepo.mockResolvedValue('/tmp/repo');
     mockLintWiki.mockResolvedValue({
@@ -92,6 +107,21 @@ describe('startMcpServer integration', () => {
       articlesIndexed: 5,
       linksIndexed: 8,
       repairedManifestEntries: 2,
+    });
+    mockIngest.mockResolvedValue({
+      sha256: 'a'.repeat(64),
+      format: 'md',
+      title: 'Doc',
+      extractedPath: '/tmp/repo/.lore/raw/a/extracted.md',
+    });
+    mockCompile.mockResolvedValue({
+      articlesWritten: 1,
+      articlesSkipped: 0,
+      rawProcessed: 1,
+    });
+    mockExplain.mockResolvedValue({
+      explanation: 'Deep explanation',
+      sources: ['architecture'],
     });
   });
 
@@ -109,11 +139,68 @@ describe('startMcpServer integration', () => {
     const names = tools.map((tool) => tool.name);
 
     expect(names).toEqual(expect.arrayContaining([
+      'explain',
       'list_orphans',
       'list_gaps',
       'list_ambiguous',
+      'ingest',
+      'compile',
       'rebuild_index',
     ]));
+  });
+
+  it('routes explain tool and returns explanation text', async () => {
+    const { startMcpServer } = await loadMcpModule();
+    await startMcpServer('/tmp/repo');
+
+    const response = await callHandler?.({
+      params: {
+        name: 'explain',
+        arguments: { concept: 'architecture' },
+      },
+    });
+
+    const text = (response as { content: Array<{ text: string }> }).content[0]?.text ?? '';
+
+    expect(mockExplain).toHaveBeenCalledWith('/tmp/repo', 'architecture');
+    expect(text).toBe('Deep explanation');
+  });
+
+  it('routes ingest tool and forwards input/tags', async () => {
+    const { startMcpServer } = await loadMcpModule();
+    await startMcpServer('/tmp/repo');
+
+    const response = await callHandler?.({
+      params: {
+        name: 'ingest',
+        arguments: { input: './README.md', tags: ['docs', 'kb'] },
+      },
+    });
+
+    const text = (response as { content: Array<{ text: string }> }).content[0]?.text ?? '{}';
+    const body = JSON.parse(text) as { format: string; title: string };
+
+    expect(mockIngest).toHaveBeenCalledWith('/tmp/repo', './README.md', { tags: ['docs', 'kb'] });
+    expect(body.format).toBe('md');
+    expect(body.title).toBe('Doc');
+  });
+
+  it('routes compile tool and forwards options', async () => {
+    const { startMcpServer } = await loadMcpModule();
+    await startMcpServer('/tmp/repo');
+
+    const response = await callHandler?.({
+      params: {
+        name: 'compile',
+        arguments: { force: true, conceptsOnly: false },
+      },
+    });
+
+    const text = (response as { content: Array<{ text: string }> }).content[0]?.text ?? '{}';
+    const body = JSON.parse(text) as { articlesWritten: number };
+
+    expect(mockCompile).toHaveBeenCalledWith('/tmp/repo', { force: true, conceptsOnly: false });
+    expect(body.articlesWritten).toBe(1);
   });
 
   it('routes list_gaps tool through lintWiki and returns focused payload', async () => {

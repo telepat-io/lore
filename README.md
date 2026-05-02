@@ -30,7 +30,7 @@ Built for teams who need their LLMs to retain real architectural context across 
 - **Code-driven pipeline** — Deterministic code handles ingestion, compilation, indexing, and graph building. Tokens spent on knowledge, not infrastructure.
 - **Mixed source ingestion** — Docs, code notes, URLs, chat transcripts, and media. Lore normalizes everything into a consistent knowledge structure.
 - **Export everywhere** — Slides, PDF, DOCX, HTML, canvas, GraphML. Your knowledge isn't locked in a proprietary format.
-- **Agent-ready MCP server** — 13 tools over stdio for retrieval, graph diagnostics, and maintenance. Compatible with any MCP host.
+- **Agent-ready MCP server** — 16 tools over stdio for retrieval, graph diagnostics, write actions, and maintenance. Compatible with any MCP host.
 - **Git-friendly & portable** — Your wiki is plain markdown. Commit it, branch it, ship it with your project.
 
 ## Quick Start
@@ -68,12 +68,13 @@ Lore ingests content into `.lore/raw/`, compiles it into linked wiki articles in
 
 Lore ships with a first-class MCP server for agent integration:
 
-- **MCP server** — Run `lore mcp` to start the stdio MCP server with 13 tools:
-  - **Retrieval:** `search`, `ask`, `list_articles`, `get_article`, `get_neighbors`, `path`
+- **MCP server** — Run `lore mcp` to start the stdio MCP server with 16 tools:
+  - **Retrieval:** `search`, `ask`, `explain`, `list_articles`, `get_article`, `get_neighbors`, `path`
   - **Graph diagnostics:** `graph_stats`, `lint_summary`, `list_orphans`, `list_gaps`, `list_ambiguous`
+  - **Write:** `ingest`, `compile`
   - **Ingest / maintenance:** `check_duplicate`, `list_raw_tags`, `rebuild_index`
 - **Compatible hosts** — Works with Claude Code, Cursor, VS Code Copilot, and any stdio MCP client.
-- **Recommended agent loop:** `list_orphans` → `list_gaps` → `list_ambiguous` → edits/compile → `rebuild_index(repair=true)`.
+- **Recommended agent loop:** `list_orphans` → `list_gaps` → `list_ambiguous` → `ingest`/`compile` → `rebuild_index(repair=true)`.
 - **Agent docs** — [MCP Server Guide](https://docs.telepat.io/lore/guides/mcp-server) covers tool schemas, example calls, and troubleshooting.
 
 ## Security And Trust

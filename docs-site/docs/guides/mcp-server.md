@@ -16,6 +16,7 @@ Use MCP when you want agents or tools to query Lore programmatically instead of 
 
 - Retrieval tools: search, ask, graph traversal
 - Health tools: lint summary, orphan/gap/ambiguity checks
+- Write tools: ingest and compile
 - Maintenance tools: duplicate checks and index rebuild
 
 ## Tools
@@ -24,12 +25,15 @@ Use MCP when you want agents or tools to query Lore programmatically instead of 
 |---|---|
 | `search(query)` | BM25-ranked snippets |
 | `ask(question)` | BFS/DFS + LLM answer |
-| `list_articles()` | Titles + summaries from index.md |
+| `explain(concept)` | Deep concept explanation from anchor article + neighbors |
+| `list_articles()` | Slugs + titles from the article index |
 | `get_article(slug)` | Full article markdown |
 | `get_neighbors(slug)` | Related articles via backlinks |
 | `path(from, to)` | Shortest conceptual path |
 | `graph_stats()` | Article count, backlink density |
 | `lint_summary()` | Orphans, gaps, ambiguity, suggestions, diagnostics |
+| `ingest(input, tags?)` | Ingest a local path or URL into `.lore/raw` |
+| `compile(force?, conceptsOnly?)` | Compile raw sources into wiki articles |
 | `check_duplicate(content?, sha256?)` | Duplicate precheck against `.lore/raw/<sha>` |
 | `list_raw_tags()` | Raw metadata taxonomy summary (formats + top tags) |
 | `rebuild_index(repair?)` | Rebuild search index/backlinks (optional manifest repair) |
@@ -39,8 +43,9 @@ Use MCP when you want agents or tools to query Lore programmatically instead of 
 
 ## Tool Groups
 
-- Retrieval: `search`, `ask`, `list_articles`, `get_article`, `get_neighbors`, `path`
+- Retrieval: `search`, `ask`, `explain`, `list_articles`, `get_article`, `get_neighbors`, `path`
 - Graph diagnostics: `graph_stats`, `lint_summary`, `list_orphans`, `list_gaps`, `list_ambiguous`
+- Write: `ingest`, `compile`
 - Ingest/index maintenance: `check_duplicate`, `list_raw_tags`, `rebuild_index`
 
 ## Integration Example Pattern
@@ -61,6 +66,8 @@ Client pattern:
 ## New Utility Tools
 
 - `check_duplicate` accepts either raw `content` (hashed server-side) or a known `sha256` and returns whether an existing raw entry already exists.
+- `ingest` accepts an `input` (path or URL) and optional `tags`, then runs Lore's ingest pipeline via MCP.
+- `compile` accepts optional `force` and `conceptsOnly` flags and runs Lore's compile pipeline via MCP.
 - `list_raw_tags` aggregates `meta.json` across `.lore/raw/` and returns:
 	- total entry count
 	- per-format counts
@@ -91,6 +98,41 @@ Example ask call:
 	"name": "ask",
 	"arguments": {
 		"question": "How does compile lock recovery work?"
+	}
+}
+```
+
+Example explain call:
+
+```json
+{
+	"name": "explain",
+	"arguments": {
+		"concept": "compile lock recovery"
+	}
+}
+```
+
+Example ingest call:
+
+```json
+{
+	"name": "ingest",
+	"arguments": {
+		"input": "./README.md",
+		"tags": ["docs", "architecture"]
+	}
+}
+```
+
+Example compile call:
+
+```json
+{
+	"name": "compile",
+	"arguments": {
+		"force": false,
+		"conceptsOnly": false
 	}
 }
 ```
@@ -141,7 +183,7 @@ Example index rebuild with repair:
 1. `list_orphans` to find disconnected concepts.
 2. `list_gaps` to find missing concept pages.
 3. `list_ambiguous` to identify uncertain content.
-4. perform edits/compile actions.
+4. `ingest` and `compile` to refresh knowledge.
 5. `rebuild_index(repair=true)` to refresh graph/search state.
 
 ## End-to-End Maintenance Scenario

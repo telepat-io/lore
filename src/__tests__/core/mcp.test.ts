@@ -87,6 +87,9 @@ describe('MCP_TOOLS', () => {
 
     expect(names).toEqual(expect.arrayContaining([
       'check_duplicate',
+      'explain',
+      'ingest',
+      'compile',
       'list_raw_tags',
       'rebuild_index',
       'list_orphans',
