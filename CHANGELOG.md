@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.4](https://github.com/telepat-io/lore/compare/lore-v0.1.3...lore-v0.1.4) (2026-05-02)
+
+
+### Features
+
+* add ingest and compile tools to MCP server and update documentation ([50ea7ec](https://github.com/telepat-io/lore/commit/50ea7eced414cd241799ccf0047e99f0eabda255))
+* enhance URL ingestion process with document and image handling, update related documentation ([74015b1](https://github.com/telepat-io/lore/commit/74015b1397c01ee6f827684f2fc14f1149e0eb57))
+* Implement article operations and provenance management ([358ab18](https://github.com/telepat-io/lore/commit/358ab18f8c86828ca1c785be423270bc36f5806f))
+
 ## [0.1.3](https://github.com/telepat-io/lore/compare/lore-v0.1.2...lore-v0.1.3) (2026-04-29)
 
 
