@@ -194,6 +194,25 @@ describe('ingest', () => {
     expect(parseWithMarkerMock).toHaveBeenCalled();
   });
 
+  it('downloads document URLs and routes them to Marker parser', async () => {
+    const fetchMock = jest.fn<(...args: any[]) => Promise<any>>(async () => ({
+      ok: true,
+      arrayBuffer: async () => new TextEncoder().encode('pdf-from-url').buffer,
+    }));
+    (globalThis as { fetch?: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+
+    const parseWithMarkerMock = jest.fn<() => Promise<string>>().mockResolvedValue('# Marker URL Output');
+    jest.resetModules();
+    jest.unstable_mockModule('../../utils/parsers/marker.js', () => ({ parseWithMarker: parseWithMarkerMock }));
+
+    const ingestModule = await import('../../core/ingest.js');
+    const result = await ingestModule.ingest(tmpDir, 'https://example.com/slides.pdf');
+
+    expect(result.format).toBe('pdf');
+    expect(parseWithMarkerMock).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/slides.pdf');
+  });
+
   it('routes image extensions to vision parser', async () => {
     const imageFile = path.join(tmpDir, 'diagram.png');
     await fs.writeFile(imageFile, 'png-placeholder');
@@ -207,6 +226,25 @@ describe('ingest', () => {
 
     expect(result.format).toBe('png');
     expect(parseImageMock).toHaveBeenCalled();
+  });
+
+  it('downloads image URLs and routes them to vision parser', async () => {
+    const fetchMock = jest.fn<(...args: any[]) => Promise<any>>(async () => ({
+      ok: true,
+      arrayBuffer: async () => new TextEncoder().encode('png-from-url').buffer,
+    }));
+    (globalThis as { fetch?: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
+
+    const parseImageMock = jest.fn<() => Promise<string>>().mockResolvedValue('# Image URL Output');
+    jest.resetModules();
+    jest.unstable_mockModule('../../utils/parsers/vision.js', () => ({ parseImage: parseImageMock }));
+
+    const ingestModule = await import('../../core/ingest.js');
+    const result = await ingestModule.ingest(tmpDir, 'https://example.com/diagram.png');
+
+    expect(result.format).toBe('png');
+    expect(parseImageMock).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/diagram.png');
   });
 
   it('falls back to text for unknown file extensions', async () => {

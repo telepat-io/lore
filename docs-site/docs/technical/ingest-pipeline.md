@@ -21,7 +21,9 @@ Routes to the correct parser based on file type or URL pattern.
 | json/jsonl | conversation detection + JSON rendering fallback | transcript-first strategy |
 | pdf/docx/pptx/xlsx/epub | Replicate Marker | requires Replicate token |
 | image formats | Replicate Vision | OCR/caption prompt extraction |
-| URL | Cloudflare BR if configured, otherwise Jina | Cloudflare failure falls back to Jina |
+| web page URL | Cloudflare BR `/markdown` endpoint if configured, otherwise Jina | returns markdown directly; Cloudflare failure falls back to Jina |
+| document URL (`.pdf`, `.docx`, etc.) | temp download → Replicate Marker | identical path to local document files |
+| image URL (`.png`, `.jpg`, etc.) | temp download → Replicate Vision | identical path to local image files |
 | video URL | `yt-dlp` subtitle workflow | falls back to URL parsing when unavailable |
 
 ### Parser Selection
@@ -29,7 +31,8 @@ Routes to the correct parser based on file type or URL pattern.
 - Markdown and text-like files route through direct markdown normalization.
 - Office/PDF/media formats route through specialized extractors.
 - `.json` / `.jsonl` content is schema-checked first for conversation exports.
-- URLs route through fetch/browser extraction based on source and config.
+- URLs with document or image extensions are downloaded to a temp file and routed through the same local extractor (Marker or Vision).
+- All other URLs route through fetch/browser extraction based on source and config.
 
 ### Video URL Fallback Behavior
 

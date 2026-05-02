@@ -54,6 +54,14 @@ Use `package.json` scripts as canonical. Do not invent alternate command names.
 - At minimum, update impacted surfaces across root docs and `docs-site/docs/` guides/reference pages.
 - Treat documentation completeness as part of done criteria before handoff.
 
+## MCP Interface Sync (Mandatory)
+
+After any significant codebase change — new commands, changed command signatures, new ingest formats, or altered core behavior — also:
+
+- Update `src/core/mcp.ts` (or the relevant MCP tool definitions) to keep the MCP interface in sync with the implementation.
+- Verify that tool descriptions, parameter schemas, and example inputs in the MCP server reflect the updated behavior.
+- If a new parser or ingest path is added, confirm the `ingest` MCP tool documentation covers it.
+
 ## Testing Guidance
 
 - Unit tests: `src/__tests__/...`

@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import os from 'os';
 import path from 'path';
 import { requireRepo } from './repo.js';
 import { hashContent } from '../utils/hash.js';
@@ -159,11 +160,31 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
       extractor = parsed.extractor;
       logger?.stepEnd('ingest.parse.video', { extractor });
     } else {
-      logger?.stepStart('ingest.parse.url', { input });
-      format = 'url';
-      rawContent = input;
-      extracted = await parseUrl(input);
-      logger?.stepEnd('ingest.parse.url');
+      const remoteExt = getUrlPathExt(input);
+      if (MARKER_EXTS.has(remoteExt) || IMAGE_EXTS.has(remoteExt)) {
+        logger?.stepStart('ingest.parse.url.download', { input, ext: remoteExt });
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'lore-url-ingest-'));
+        const tempPath = path.join(tempDir, `download${remoteExt}`);
+        try {
+          await downloadUrlToPath(input, tempPath);
+          format = remoteExt.slice(1);
+          rawContent = input;
+          if (MARKER_EXTS.has(remoteExt)) {
+            extracted = await parseWithMarker(tempPath);
+          } else {
+            extracted = await parseImage(tempPath);
+          }
+          logger?.stepEnd('ingest.parse.url.download', { format });
+        } finally {
+          await fs.rm(tempDir, { recursive: true, force: true });
+        }
+      } else {
+        logger?.stepStart('ingest.parse.url', { input });
+        format = 'url';
+        rawContent = input;
+        extracted = await parseUrl(input);
+        logger?.stepEnd('ingest.parse.url');
+      }
     }
   } else {
     // File input
@@ -269,6 +290,24 @@ export async function ingest(cwd: string, input: string, opts: IngestOptions = {
   logger?.stepEnd('ingest.init', { sha256, format, title: normalized.title, extractor });
 
   return { sha256, format, title: normalized.title, extractedPath, ...(extractor ? { extractor } : {}) };
+}
+
+function getUrlPathExt(url: string): string {
+  try {
+    return path.extname(new URL(url).pathname).toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+async function downloadUrlToPath(url: string, outPath: string): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to download URL ${url}: ${response.status} ${response.statusText}`);
+  }
+
+  const content = Buffer.from(await response.arrayBuffer());
+  await fs.writeFile(outPath, content);
 }
 
 interface ExistingIngestMeta {

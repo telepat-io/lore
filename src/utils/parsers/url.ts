@@ -1,4 +1,4 @@
-/** Fetch URL content as markdown via Jina r.jina.ai or Cloudflare Browser Rendering */
+/** Fetch URL content as markdown via Jina r.jina.ai or Cloudflare Browser Run markdown endpoint */
 export async function parseUrl(url: string): Promise<string> {
   // Check if Cloudflare Browser Rendering credentials are available
   const cfAccountId = process.env['LORE_CF_ACCOUNT_ID'];
@@ -28,7 +28,7 @@ async function fetchWithJina(url: string): Promise<string> {
 }
 
 async function fetchWithCloudflare(url: string, accountId: string, token: string): Promise<string> {
-  const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/browser-rendering`;
+  const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/browser-rendering/markdown`;
   const response = await fetch(cfUrl, {
     method: 'POST',
     headers: {
@@ -44,10 +44,11 @@ async function fetchWithCloudflare(url: string, accountId: string, token: string
     return fetchWithJina(url);
   }
 
-  const data = await response.json() as { result?: { content?: string } };
-  const html = data.result?.content ?? '';
+  const data = await response.json() as { result?: unknown };
+  if (typeof data.result === 'string') {
+    return data.result;
+  }
 
-  // Convert HTML to markdown via our html parser
-  const { parseHtml } = await import('./html.js');
-  return parseHtml(html);
+  process.stderr.write('Cloudflare markdown response did not include a string result, falling back to Jina.\n');
+  return fetchWithJina(url);
 }

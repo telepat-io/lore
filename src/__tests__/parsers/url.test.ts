@@ -1,14 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-async function loadUrlParserWithHtmlMock() {
-  jest.resetModules();
-  jest.unstable_mockModule('../../utils/parsers/html.js', () => ({
-    parseHtml: jest.fn(async () => '# Parsed HTML'),
-  }));
-
-  return import('../../utils/parsers/url.js');
-}
-
 describe('parseUrl', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
@@ -59,20 +50,20 @@ describe('parseUrl', () => {
     await expect(parseUrl('https://example.com')).rejects.toThrow('Jina fetch failed');
   });
 
-  it('uses Cloudflare HTML path when successful', async () => {
+  it('uses Cloudflare markdown endpoint when successful', async () => {
     process.env['LORE_CF_ACCOUNT_ID'] = 'acct';
     process.env['LORE_CF_TOKEN'] = 'token';
 
     const fetchMock = jest.fn<(...args: any[]) => Promise<any>>(async () => ({
       ok: true,
-      json: async () => ({ result: { content: '<h1>Hello</h1>' } }),
+      json: async () => ({ result: '# Cloudflare markdown' }),
     }));
     (globalThis as { fetch?: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
 
-    const { parseUrl } = await loadUrlParserWithHtmlMock();
+    const { parseUrl } = await import('../../utils/parsers/url.js');
     const md = await parseUrl('https://example.com');
 
-    expect(md).toBe('# Parsed HTML');
-    expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toContain('/browser-rendering');
+    expect(md).toBe('# Cloudflare markdown');
+    expect(String(fetchMock.mock.calls[0]?.[0] ?? '')).toContain('/browser-rendering/markdown');
   });
 });

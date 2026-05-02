@@ -21,7 +21,9 @@ lore ingest-sessions [framework|all]
 | `.json`, `.jsonl` | JSON parser (auto-normalizes supported chat exports) |
 | `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub` | Replicate marker |
 | Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`) | Replicate vision |
-| URLs | Jina r.jina.ai or Cloudflare BR |
+| URLs (web pages) | Cloudflare BR `/markdown` endpoint or Jina r.jina.ai |
+| URLs (documents: `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub`) | Temp download → Replicate Marker |
+| URLs (images: `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`) | Temp download → Replicate Vision |
 | Video URLs | yt-dlp subtitles |
 
 All ingested content is stored in `.lore/raw/<sha256>/` with `extracted.md` and `meta.json`.
@@ -156,9 +158,34 @@ Supported conversation schema families include:
 ## How PDF Ingestion Works
 
 1. Lore detects a document extension such as `.pdf` or `.docx`.
-2. The file is sent to Replicate marker (`cuuupid/marker`) for markdown extraction.
+2. The file is sent to Replicate Marker (`cuuupid/marker`) for markdown extraction.
 3. The normalized markdown is written to `.lore/raw/<sha256>/extracted.md`.
 4. Metadata and source tracking are written to `.lore/raw/<sha256>/meta.json`.
+
+## How Web Document and Image URL Ingestion Works
+
+Lore detects the file extension in the URL path to distinguish between web pages, documents, and images.
+
+For **document URLs** (ending in `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub`):
+
+1. Lore downloads the file to a temporary directory.
+2. Sends it through Replicate Marker — the same parser used for local documents.
+3. Cleans up the temp file once extraction completes.
+4. Stores result in the same raw pipeline (`extracted.md` + `meta.json`).
+
+For **image URLs** (ending in `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`):
+
+1. Lore downloads the image to a temporary directory.
+2. Sends it through Replicate Vision — the same parser used for local images.
+3. Cleans up the temp file once extraction completes.
+4. Stores result in the same raw pipeline.
+
+For **all other URLs** (web pages, HTML, APIs, etc.):
+
+1. Lore calls the Cloudflare Browser Run `/markdown` endpoint when `LORE_CF_ACCOUNT_ID` and `LORE_CF_TOKEN` are configured — this gives JavaScript-rendered markdown directly.
+2. On Cloudflare failure or missing credentials, Lore falls back to Jina `r.jina.ai`.
+
+> **Requirements**: document/image URL ingestion requires the same credentials as local document/image ingestion — a `REPLICATE_API_TOKEN`. Web page ingestion requires `LORE_CF_ACCOUNT_ID` + `LORE_CF_TOKEN` for Cloudflare (Jina is the credential-free fallback).
 
 ## How YouTube/Video Ingestion Works
 
@@ -190,5 +217,6 @@ Extractor provenance:
 	- folder tags are path-derived and bounded
 	- heuristic tags are phrase-driven and conservative
 - URL ingestion path:
-	- with `LORE_CF_ACCOUNT_ID` + `LORE_CF_TOKEN`, Lore tries Cloudflare Browser Rendering first
-	- on CF failure, Lore falls back to Jina fetch automatically
+	- URLs ending in document or image extensions (`.pdf`, `.docx`, `.png`, etc.) trigger temp-download and local parser routing — same as local file ingestion
+	- for web page URLs, with `LORE_CF_ACCOUNT_ID` + `LORE_CF_TOKEN`, Lore calls the Cloudflare Browser Run `/markdown` endpoint directly
+	- on CF failure or missing credentials, Lore falls back to Jina fetch automatically

@@ -17,7 +17,9 @@ This page is the ingest/export compatibility reference for Lore.
 | `.pdf` | Replicate Marker | Replicate token | Uses Marker model on Replicate |
 | `.docx` / `.pptx` / `.xlsx` / `.epub` | Replicate Marker | Replicate token | Parsed as document formats via Marker |
 | Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.tiff`) | Replicate Vision | Replicate token | OCR + descriptive extraction |
-| URLs | Cloudflare BR or Jina | Optional CF credentials | Cloudflare first if credentials are present |
+| Web page URLs | Cloudflare BR `/markdown` or Jina | Optional CF credentials | Cloudflare markdown endpoint when credentials are present; Jina fallback |
+| Document URLs (`.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub`) | Temp download → Replicate Marker | Replicate token | Downloaded to temp dir, then processed like local documents |
+| Image URLs (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`) | Temp download → Replicate Vision | Replicate token | Downloaded to temp dir, then processed like local images |
 | Video URLs | `yt-dlp` subtitle pipeline | `yt-dlp` recommended | Falls back to URL parser when subtitles unavailable |
 
 ## Ingest Pipeline Overview
@@ -84,9 +86,14 @@ If a file does not match known conversation patterns, Lore falls back to generic
 
 ### URL content
 
-- Cloudflare Browser Rendering is used when both `LORE_CF_ACCOUNT_ID` and `LORE_CF_TOKEN` are set
-- On Cloudflare failure, Lore logs fallback and uses Jina
-- Without Cloudflare credentials, Lore fetches through Jina directly
+Lore routes URL ingestion based on the file extension in the URL path:
+
+- **Document extensions** (`.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub`): downloaded to a temp file then processed via Replicate Marker — identical to local document ingestion. Requires `REPLICATE_API_TOKEN`.
+- **Image extensions** (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`): downloaded to a temp file then processed via Replicate Vision — identical to local image ingestion. Requires `REPLICATE_API_TOKEN`.
+- **All other URLs** (web pages, HTML, etc.):
+  - When both `LORE_CF_ACCOUNT_ID` and `LORE_CF_TOKEN` are set, Lore calls the Cloudflare Browser Run `/markdown` endpoint, which returns markdown directly without local HTML conversion.
+  - On Cloudflare failure or a non-string response, Lore logs the fallback and uses Jina.
+  - Without Cloudflare credentials, Lore fetches through Jina directly.
 
 ### Video URLs
 
