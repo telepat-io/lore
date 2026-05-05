@@ -18,7 +18,7 @@ Use global scope for credentials and account-wide settings. Use repo scope for m
 
 ```json
 {
-  "model": "moonshotai/kimi-k2.5",
+  "model": "deepseek/deepseek-v4-pro",
   "temperature": 0.3,
   "maxTokens": 4096,
   "webExporter": "starlight"
@@ -82,7 +82,7 @@ lore settings set openrouterApiKey <value> --scope global
 lore settings set cloudflareAccountId <value> --scope global
 
 # write repo values
-lore settings set model moonshotai/kimi-k2.5 --scope repo
+lore settings set model deepseek/deepseek-v4-pro --scope repo
 lore settings set temperature 0.3 --scope repo
 lore settings set maxTokens 4096 --scope repo
 lore settings set webExporter starlight --scope repo
@@ -119,7 +119,7 @@ lore settings set maxTokens - --scope repo
 
 ```json
 {
-  "model": "moonshotai/kimi-k2.5",
+  "model": "deepseek/deepseek-v4-pro",
   "temperature": 0.5
 }
 ```

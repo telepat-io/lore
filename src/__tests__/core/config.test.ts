@@ -19,7 +19,7 @@ afterEach(async () => {
 describe('readRepoConfig', () => {
   it('reads default config after init', async () => {
     const config = await readRepoConfig(tmpDir);
-    expect(config.model).toBe('moonshotai/kimi-k2.5');
+    expect(config.model).toBe('deepseek/deepseek-v4-pro');
     expect(config.temperature).toBe(0.3);
     expect(config.maxTokens).toBeUndefined();
   });

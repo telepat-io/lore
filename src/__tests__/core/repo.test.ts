@@ -28,7 +28,7 @@ describe('initRepo', () => {
   it('creates config.json with defaults', async () => {
     await initRepo(tmpDir);
     const config = JSON.parse(await fs.readFile(path.join(tmpDir, '.lore', 'config.json'), 'utf-8'));
-    expect(config.model).toBe('moonshotai/kimi-k2.5');
+    expect(config.model).toBe('deepseek/deepseek-v4-pro');
     expect(config.temperature).toBe(0.3);
   });
 

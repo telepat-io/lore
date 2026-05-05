@@ -8,7 +8,7 @@ Lore uses OpenRouter for core LLM operations (for example compile, query, explai
 
 ```json
 {
-  "model": "moonshotai/kimi-k2.5",
+  "model": "deepseek/deepseek-v4-pro",
   "temperature": 0.3,
   "maxTokens": 4096
 }
@@ -36,7 +36,7 @@ Use this as a practical starting point, then tune based on your own latency/cost
 
 ## Recommended Models
 
-- `moonshotai/kimi-k2.5` -- strong long-context and multilingual performance
+- `deepseek/deepseek-v4-pro` -- strong long-context and multilingual performance
 - `openai/gpt-4o` -- strong quality/speed balance
 - `anthropic/claude-3.5-sonnet` -- strong reasoning
 - `google/gemini-pro-1.5` -- large context window
@@ -57,7 +57,7 @@ Use this as a practical starting point, then tune based on your own latency/cost
 
 ```json
 {
-  "model": "moonshotai/kimi-k2.5",
+  "model": "deepseek/deepseek-v4-pro",
   "temperature": 0.2
 }
 ```

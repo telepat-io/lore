@@ -53,7 +53,7 @@ describe('settings commands', () => {
       cloudflareToken: 'real-cf-token',
     });
     mockRequireRepo.mockResolvedValue('/tmp/repo');
-    mockReadRepoConfig.mockResolvedValue({ model: 'moonshotai/kimi-k2.5', temperature: 0.3, maxTokens: 4096 });
+    mockReadRepoConfig.mockResolvedValue({ model: 'deepseek/deepseek-v4-pro', temperature: 0.3, maxTokens: 4096 });
 
     const { settingsListCommand } = await loadSettingsCommands();
     const stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -89,14 +89,14 @@ describe('settings commands', () => {
 
   it('settingsSetCommand parses numeric repo values before writing', async () => {
     mockRequireRepo.mockResolvedValue('/tmp/repo');
-    mockReadRepoConfig.mockResolvedValue({ model: 'moonshotai/kimi-k2.5', temperature: 0.3, maxTokens: 4096 });
+    mockReadRepoConfig.mockResolvedValue({ model: 'deepseek/deepseek-v4-pro', temperature: 0.3, maxTokens: 4096 });
 
     const { settingsSetCommand } = await loadSettingsCommands();
 
     await settingsSetCommand('temperature', '0.8', { scope: 'repo' });
 
     expect(mockWriteRepoConfig).toHaveBeenCalledWith('/tmp/repo', {
-      model: 'moonshotai/kimi-k2.5',
+      model: 'deepseek/deepseek-v4-pro',
       temperature: 0.8,
       maxTokens: 4096,
     });
@@ -104,14 +104,14 @@ describe('settings commands', () => {
 
   it('settingsSetCommand unsets maxTokens when value is -', async () => {
     mockRequireRepo.mockResolvedValue('/tmp/repo');
-    mockReadRepoConfig.mockResolvedValue({ model: 'moonshotai/kimi-k2.5', temperature: 0.3, maxTokens: 4096 });
+    mockReadRepoConfig.mockResolvedValue({ model: 'deepseek/deepseek-v4-pro', temperature: 0.3, maxTokens: 4096 });
 
     const { settingsSetCommand } = await loadSettingsCommands();
 
     await settingsSetCommand('maxTokens', '-', { scope: 'repo' });
 
     expect(mockWriteRepoConfig).toHaveBeenCalledWith('/tmp/repo', {
-      model: 'moonshotai/kimi-k2.5',
+      model: 'deepseek/deepseek-v4-pro',
       temperature: 0.3,
     });
   });
