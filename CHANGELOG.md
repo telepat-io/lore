@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/telepat-io/lore/compare/lore-v0.1.4...lore-v0.1.5) (2026-05-05)
+
+
+### Features
+
+* add custom waitUntil option for Cloudflare ingestion and update related documentation ([384e3f7](https://github.com/telepat-io/lore/commit/384e3f7cf0a78e802be313af3f8d1b8e61cfc049))
+* update default model references from moonshotai/kimi-k2.5 to deepseek/deepseek-v4-pro across documentation and tests ([9b27835](https://github.com/telepat-io/lore/commit/9b27835b47d6b25238a0241bdb63b9c379b4aefd))
+
 ## [0.1.4](https://github.com/telepat-io/lore/compare/lore-v0.1.3...lore-v0.1.4) (2026-05-02)
 
 
