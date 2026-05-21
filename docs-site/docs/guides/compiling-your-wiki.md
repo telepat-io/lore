@@ -164,7 +164,7 @@ Lore guards compile with `.lore/compile.lock` to prevent overlapping runs.
 
 - If another live compile is active, `lore compile` fails fast with an actionable error.
 - Stale or malformed lock payloads are reclaimed automatically.
-- `lore watch` integrates with this behavior and reports busy/queued status during auto-compile loops.
+- When `autoCompile` is enabled in the repo config, ingest commands automatically trigger compile and respect the same lock.
 
 The lock file stores a process ID (PID). If that PID is no longer alive, Lore removes the stale lock and retries acquisition.
 
@@ -221,23 +221,21 @@ After upgrading from an older version:
 lore compile --concepts-only
 ```
 
-## Watch Mode Interaction
+## Auto-Compile Setting
 
-`lore watch` can auto-compile raw changes with debounce and queueing.
+Set `autoCompile` in the repo config to automatically compile after every ingest:
 
-- Debounce: raw changes are grouped (default 1 second)
-- If compile is already running, one follow-up pass is queued
-- Wiki article edits trigger reindex directly (without full compile)
-
-```mermaid
-flowchart TD
-    A[Raw change detected] --> B[Debounce window]
-    B --> C{Compile in flight?}
-    C -->|No| D[Run compile]
-    C -->|Yes| E[Queue one follow-up pass]
-    D --> F[Rebuild index + concepts]
-    E --> D
+```bash
+lore settings set autoCompile true --scope repo
 ```
+
+When enabled:
+
+- `lore ingest` runs compile automatically after ingestion
+- `lore ingest-sessions` runs compile once after all sessions are ingested
+- The MCP `ingest` tool also auto-compiles when the setting is on
+- The compile lock prevents overlapping runs — a compile already in progress blocks new ones
+- Disable with `lore settings set autoCompile false --scope repo`
 
 ## Troubleshooting Compile Runs
 

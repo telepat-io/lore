@@ -13,6 +13,7 @@ import { hashContent } from '../utils/hash.js';
 import { rebuildIndex } from './index.js';
 import { ingest } from './ingest.js';
 import { compile } from './compile.js';
+import { readRepoConfig } from './config.js';
 
 interface MpcToolDefinition {
   name: string;
@@ -253,7 +254,20 @@ export async function startMcpServer(cwd: string): Promise<void> {
         const result = await ingest(cwd, payload.input, {
           ...(payload.tags ? { tags: payload.tags } : {}),
         });
-        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+
+        let compileResult;
+        try {
+          const repoConfig = await readRepoConfig(root);
+          if (repoConfig.autoCompile) {
+            compileResult = await compile(cwd);
+          }
+        } catch {
+          // No repo config or compile failed — continue normally
+        }
+
+        const output: Record<string, unknown> = { ...result };
+        if (compileResult) output.compile = compileResult;
+        return { content: [{ type: 'text' as const, text: JSON.stringify(output, null, 2) }] };
       }
 
       case 'compile': {

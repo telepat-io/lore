@@ -11,6 +11,7 @@ type MenuAction =
   | 'temperature'
   | 'maxTokens'
   | 'webExporter'
+  | 'autoCompile'
   | 'save'
   | 'cancel';
 
@@ -28,7 +29,7 @@ interface EditState {
 
 export interface SettingsCliResult {
   global: Partial<Record<'openrouterApiKey' | 'replicateApiToken' | 'cloudflareAccountId' | 'cloudflareToken', string | null>>;
-  repo: Partial<Record<'model' | 'temperature' | 'maxTokens' | 'webExporter', string | number | undefined>>;
+  repo: Partial<Record<'model' | 'temperature' | 'maxTokens' | 'webExporter' | 'autoCompile', string | number | boolean | undefined>>;
 }
 
 interface SettingsCliFlowProps {
@@ -78,6 +79,7 @@ export function SettingsCliFlow({ initialGlobal, initialRepo, onDone }: Settings
       temperature: resolve('temperature'),
       maxTokens: resolve('maxTokens'),
       webExporter: resolve('webExporter'),
+      autoCompile: resolve('autoCompile'),
     } satisfies RepoConfig;
   }, [initialRepo, repoEdits]);
 
@@ -107,6 +109,7 @@ export function SettingsCliFlow({ initialGlobal, initialRepo, onDone }: Settings
         { action: 'temperature', label: `Temperature: ${effectiveRepo.temperature}` },
         { action: 'maxTokens', label: `Max tokens: ${effectiveRepo.maxTokens ?? 'not set'}` },
         { action: 'webExporter', label: `Web exporter: ${effectiveRepo.webExporter ?? 'not set'}` },
+        { action: 'autoCompile', label: `Auto-compile: ${effectiveRepo.autoCompile}` },
       );
     }
 
@@ -211,6 +214,12 @@ export function SettingsCliFlow({ initialGlobal, initialRepo, onDone }: Settings
 
     if (action === 'webExporter' && effectiveRepo) {
       const current = effectiveRepo.webExporter ?? '';
+      setEditing({ action, label: action, value: current, isSecret: false });
+      setDraft(current);
+    }
+
+    if (action === 'autoCompile' && effectiveRepo) {
+      const current = String(effectiveRepo.autoCompile);
       setEditing({ action, label: action, value: current, isSecret: false });
       setDraft(current);
     }
@@ -325,6 +334,30 @@ export function SettingsCliFlow({ initialGlobal, initialRepo, onDone }: Settings
       }
 
       setRepoEdits((prev) => ({ ...prev, webExporter: value }));
+      setEditing(null);
+      setDraft('');
+    }
+
+    if (action === 'autoCompile') {
+      if (value === '') {
+        setEditing(null);
+        setDraft('');
+        return;
+      }
+
+      if (value === '-') {
+        setRepoEdits((prev) => ({ ...prev, autoCompile: false }));
+        setEditing(null);
+        setDraft('');
+        return;
+      }
+
+      if (value !== 'true' && value !== 'false') {
+        setError('Auto-compile must be true or false.');
+        return;
+      }
+
+      setRepoEdits((prev) => ({ ...prev, autoCompile: value === 'true' }));
       setEditing(null);
       setDraft('');
     }

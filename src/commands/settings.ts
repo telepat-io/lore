@@ -12,7 +12,7 @@ import { KeytarUnavailableError } from '../core/secretStore.js';
 
 const SECRET_KEYS = new Set(['openrouterApiKey', 'replicateApiToken', 'cloudflareToken']);
 const GLOBAL_KEYS = new Set(['openrouterApiKey', 'replicateApiToken', 'cloudflareAccountId', 'cloudflareToken']);
-const REPO_KEYS = new Set(['model', 'temperature', 'maxTokens', 'webExporter']);
+const REPO_KEYS = new Set(['model', 'temperature', 'maxTokens', 'webExporter', 'autoCompile']);
 
 function parseScope(opts: OptionValues): 'global' | 'repo' | 'all' {
   const raw = String(opts['scope'] ?? 'all');
@@ -35,7 +35,7 @@ function redactValue(key: string, value: unknown): unknown {
   return '***configured***';
 }
 
-function parseRepoSetting(key: string, value: string): string | number | undefined {
+function parseRepoSetting(key: string, value: string): string | number | boolean | undefined {
   if (key === 'temperature') {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
@@ -53,6 +53,12 @@ function parseRepoSetting(key: string, value: string): string | number | undefin
       throw new Error('maxTokens must be an integer.');
     }
     return parsed;
+  }
+
+  if (key === 'autoCompile') {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    throw new Error('autoCompile must be true or false.');
   }
 
   return value;

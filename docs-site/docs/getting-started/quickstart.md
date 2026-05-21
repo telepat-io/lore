@@ -62,12 +62,14 @@ lore export bundle
 
 Default output location: `.lore/exports`.
 
-## Optional: Continuous watch mode
+## Optional: Auto-compile after ingest
 
 ```bash
-# auto-compile raw changes with debounce and queueing
-lore watch
+# enable auto-compile — ingest automatically runs compile
+lore settings set autoCompile true --scope repo
 ```
+
+When enabled, `lore ingest` and `lore ingest-sessions` automatically run `lore compile` after ingestion completes. Disable with `lore settings set autoCompile false --scope repo`.
 
 ## Optional: Repair-first indexing
 

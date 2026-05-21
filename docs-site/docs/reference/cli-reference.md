@@ -20,7 +20,6 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 | `lore path "<A>" "<B>"` | Shortest path between articles |
 | `lore explain "<concept>"` | Deep-dive on a concept |
 | `lore lint` | Wiki health checks + structured diagnostics |
-| `lore watch` | Watch `raw/` and `wiki/` and auto-compile raw changes |
 | `lore angela [install\|run]` | Git commit capture |
 | `lore export <format> [--out dir]` | Export wiki |
 | `lore mcp` | Start MCP server |
@@ -39,7 +38,6 @@ Every command supports `--json` for machine-readable output on stdout. Human-rea
 - `lore compile`: guarded by `.lore/compile.lock` to prevent concurrent runs.
 - `lore index --repair`: reconstructs missing manifest entries before rebuild.
 - `lore lint --json`: includes line-aware `diagnostics[]` entries with `rule`, `severity`, `file`, optional `line`, and `message`.
-- `lore watch`: debounces raw changes, runs compile automatically, and queues one additional pass when changes land during compile.
 - `lore query --normalize-question`: conservative typo cleanup while preserving technical tokens.
 
 Guide links:
@@ -51,7 +49,6 @@ Guide links:
 - `lore query`: [Searching and Querying](../guides/searching-and-querying.md)
 - `lore explain`: [Explain Command](../guides/explain-command.md)
 - `lore lint`: [Linting and Health](../guides/linting-and-health.md)
-- `lore watch`: [Compiling Your Wiki](../guides/compiling-your-wiki.md)
 - `lore export`: [Exporting](../guides/exporting.md)
 - `lore angela`: [Lore Angela](../guides/lore-angela.md)
 - `lore mcp`: [MCP Server](../guides/mcp-server.md)
@@ -87,7 +84,7 @@ lore settings unset <key> [--scope global|repo|all]
 Common keys:
 
 - Global: `openrouterApiKey`, `replicateApiToken`, `cloudflareAccountId`, `cloudflareToken`
-- Repo: `model`, `temperature`, `maxTokens` (optional), `webExporter`
+- Repo: `model`, `temperature`, `maxTokens` (optional), `webExporter`, `autoCompile` (true/false)
 
 Notes:
 
@@ -110,6 +107,7 @@ Notes:
 	- `lore compile`
 	- `lore index --repair`
 	- `lore lint --json`
+- Set `lore settings set autoCompile true --scope repo` to auto-compile after every ingest. When enabled, `lore ingest` and `lore ingest-sessions` automatically run compile.
 
 ## Exit Codes
 

@@ -22,39 +22,60 @@ describe('readRepoConfig', () => {
     expect(config.model).toBe('deepseek/deepseek-v4-pro');
     expect(config.temperature).toBe(0.3);
     expect(config.maxTokens).toBeUndefined();
+    expect(config.autoCompile).toBe(false);
+  });
+
+  it('reads autoCompile true', async () => {
+    await fs.writeFile(
+      path.join(tmpDir, '.lore', 'config.json'),
+      JSON.stringify({ model: 'x', temperature: 0.5, autoCompile: true }),
+    );
+    const config = await readRepoConfig(tmpDir);
+    expect(config.autoCompile).toBe(true);
+  });
+
+  it('defaults autoCompile to false when missing from config', async () => {
+    await fs.writeFile(
+      path.join(tmpDir, '.lore', 'config.json'),
+      JSON.stringify({ model: 'x', temperature: 0.5 }),
+    );
+    const config = await readRepoConfig(tmpDir);
+    expect(config.autoCompile).toBe(false);
   });
 });
 
 describe('writeRepoConfig', () => {
   it('persists config changes', async () => {
-    await writeRepoConfig(tmpDir, { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7, maxTokens: 8192 });
+    await writeRepoConfig(tmpDir, { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7, maxTokens: 8192, autoCompile: false });
     const config = await readRepoConfig(tmpDir);
     expect(config.model).toBe('anthropic/claude-3.5-sonnet');
     expect(config.temperature).toBe(0.7);
     expect(config.maxTokens).toBe(8192);
+    expect(config.autoCompile).toBe(false);
   });
 
   it('persists config when maxTokens is unset', async () => {
-    await writeRepoConfig(tmpDir, { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7 });
+    await writeRepoConfig(tmpDir, { model: 'anthropic/claude-3.5-sonnet', temperature: 0.7, autoCompile: false });
     const config = await readRepoConfig(tmpDir);
     expect(config.model).toBe('anthropic/claude-3.5-sonnet');
     expect(config.temperature).toBe(0.7);
     expect(config.maxTokens).toBeUndefined();
+    expect(config.autoCompile).toBe(false);
   });
 
   it('overwrites existing config completely', async () => {
-    await writeRepoConfig(tmpDir, { model: 'a', temperature: 0.1, maxTokens: 100 });
-    await writeRepoConfig(tmpDir, { model: 'b', temperature: 0.9, maxTokens: 9000 });
+    await writeRepoConfig(tmpDir, { model: 'a', temperature: 0.1, maxTokens: 100, autoCompile: false });
+    await writeRepoConfig(tmpDir, { model: 'b', temperature: 0.9, maxTokens: 9000, autoCompile: false });
     const config = await readRepoConfig(tmpDir);
     expect(config.model).toBe('b');
   });
 
   it('rejects invalid temperature values', async () => {
-    await expect(writeRepoConfig(tmpDir, { model: 'x', temperature: -1, maxTokens: 1024 })).rejects.toThrow();
+    await expect(writeRepoConfig(tmpDir, { model: 'x', temperature: -1, maxTokens: 1024, autoCompile: false })).rejects.toThrow();
   });
 
   it('rejects invalid maxTokens values', async () => {
-    await expect(writeRepoConfig(tmpDir, { model: 'x', temperature: 0.2, maxTokens: 0 })).rejects.toThrow();
+    await expect(writeRepoConfig(tmpDir, { model: 'x', temperature: 0.2, maxTokens: 0, autoCompile: false })).rejects.toThrow();
   });
 });
 
@@ -233,7 +254,7 @@ describe('global config', () => {
 
     const flowResult = {
       global: { openrouterApiKey: 'new-key', cloudflareAccountId: null },
-      repo: { model: 'updated-model', temperature: 0.8 },
+      repo: { model: 'updated-model', temperature: 0.8, autoCompile: true },
     };
 
     jest.resetModules();

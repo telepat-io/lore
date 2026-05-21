@@ -30,6 +30,7 @@ describe('initRepo', () => {
     const config = JSON.parse(await fs.readFile(path.join(tmpDir, '.lore', 'config.json'), 'utf-8'));
     expect(config.model).toBe('deepseek/deepseek-v4-pro');
     expect(config.temperature).toBe(0.3);
+    expect(config.autoCompile).toBe(false);
   });
 
   it('creates manifest.json', async () => {

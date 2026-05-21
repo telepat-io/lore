@@ -12,7 +12,6 @@ import { searchCommand } from '../commands/search.js';
 import { pathCommand } from '../commands/path.js';
 import { explainCommand } from '../commands/explain.js';
 import { lintCommand } from '../commands/lint.js';
-import { watchCommand } from '../commands/watch.js';
 import { angelaCommand } from '../commands/angela.js';
 import { exportCommand } from '../commands/export.js';
 import { mcpCommand } from '../commands/mcp.js';
@@ -102,11 +101,6 @@ program
   .description('Run wiki health checks: orphans, gaps, ambiguous claims, suggested questions')
   .option('--json', 'Output JSON')
   .action(lintCommand);
-
-program
-  .command('watch')
-  .description('Watch raw/ for changes and recompile automatically')
-  .action(watchCommand);
 
 program
   .command('angela [subcommand]')

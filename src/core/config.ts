@@ -18,6 +18,7 @@ const repoConfigSchema = z.object({
   temperature: z.number().min(0).max(2),
   maxTokens: z.number().int().positive().optional(),
   webExporter: z.enum(['starlight', 'vitepress']).optional(),
+  autoCompile: z.boolean().optional().default(false),
 });
 
 export interface GlobalConfig {
@@ -32,6 +33,7 @@ export interface RepoConfig {
   temperature: number;
   maxTokens?: number;
   webExporter?: 'starlight' | 'vitepress';
+  autoCompile: boolean;
 }
 
 function readDisableKeytarEnv(): boolean {
@@ -166,6 +168,7 @@ export async function renderSettings(): Promise<void> {
       process.stdout.write(`- temperature: ${repo.temperature}\n`);
       process.stdout.write(`- maxTokens: ${repo.maxTokens ?? 'not set'}\n`);
       process.stdout.write(`- webExporter: ${repo.webExporter ?? 'not set'}\n`);
+      process.stdout.write(`- autoCompile: ${repo.autoCompile}\n`);
     }
     process.stdout.write('\nUse `lore settings list|get|set|unset` for non-interactive management.\n');
     return;
@@ -221,6 +224,9 @@ export async function renderSettings(): Promise<void> {
         : {}),
       ...(Object.prototype.hasOwnProperty.call(flowResult.repo, 'webExporter')
         ? { webExporter: flowResult.repo['webExporter'] as RepoConfig['webExporter'] }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(flowResult.repo, 'autoCompile')
+        ? { autoCompile: flowResult.repo['autoCompile'] as boolean }
         : {}),
     };
     await writeRepoConfig(repoRoot, updatedRepo);

@@ -9,6 +9,7 @@ const mockQuery = jest.fn<(...args: any[]) => any>();
 const mockExplain = jest.fn<(...args: any[]) => any>();
 const mockIngest = jest.fn<(...args: any[]) => any>();
 const mockCompile = jest.fn<(...args: any[]) => any>();
+const mockReadRepoConfig = jest.fn<(...args: any[]) => any>();
 
 const mockConnect = jest.fn<(...args: any[]) => any>();
 
@@ -79,6 +80,10 @@ async function loadMcpModule() {
     compile: mockCompile,
   }));
 
+  jest.unstable_mockModule('../../core/config.js', () => ({
+    readRepoConfig: mockReadRepoConfig,
+  }));
+
   return import('../../core/mcp.js');
 }
 
@@ -95,6 +100,7 @@ describe('startMcpServer integration', () => {
     mockExplain.mockReset();
     mockIngest.mockReset();
     mockCompile.mockReset();
+    mockReadRepoConfig.mockReset();
 
     mockRequireRepo.mockResolvedValue('/tmp/repo');
     mockLintWiki.mockResolvedValue({
@@ -123,6 +129,7 @@ describe('startMcpServer integration', () => {
       explanation: 'Deep explanation',
       sources: ['architecture'],
     });
+    mockReadRepoConfig.mockResolvedValue({ model: 'x', temperature: 0.3, autoCompile: false });
   });
 
   it('registers list/call handlers and exposes new lint-maintenance tools', async () => {
@@ -247,6 +254,41 @@ describe('startMcpServer integration', () => {
 
     expect(mockRebuildIndex).toHaveBeenCalledWith('/tmp/repo', { repair: true });
     expect(body.repairedManifestEntries).toBe(2);
+  });
+
+  it('auto-compiles after MCP ingest when autoCompile is true', async () => {
+    mockReadRepoConfig.mockResolvedValue({ model: 'x', temperature: 0.3, autoCompile: true });
+    const { startMcpServer } = await loadMcpModule();
+    await startMcpServer('/tmp/repo');
+
+    const response = await callHandler?.({
+      params: {
+        name: 'ingest',
+        arguments: { input: './doc.md' },
+      },
+    });
+
+    const text = (response as { content: Array<{ text: string }> }).content[0]?.text ?? '{}';
+    const body = JSON.parse(text) as { format: string; compile?: Record<string, unknown> };
+
+    expect(mockCompile).toHaveBeenCalledWith('/tmp/repo');
+    expect(body.compile).toBeDefined();
+    expect(body.compile?.articlesWritten).toBe(1);
+  });
+
+  it('does not auto-compile after MCP ingest when autoCompile is false', async () => {
+    mockReadRepoConfig.mockResolvedValue({ model: 'x', temperature: 0.3, autoCompile: false });
+    const { startMcpServer } = await loadMcpModule();
+    await startMcpServer('/tmp/repo');
+
+    await callHandler?.({
+      params: {
+        name: 'ingest',
+        arguments: { input: './doc.md' },
+      },
+    });
+
+    expect(mockCompile).not.toHaveBeenCalled();
   });
 
   it('throws for unknown tools', async () => {

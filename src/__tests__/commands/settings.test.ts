@@ -123,4 +123,62 @@ describe('settings commands', () => {
 
     expect(mockUnsetGlobalSetting).toHaveBeenCalledWith('cloudflareToken');
   });
+
+  it('settingsSetCommand parses autoCompile boolean', async () => {
+    mockRequireRepo.mockResolvedValue('/tmp/repo');
+    mockReadRepoConfig.mockResolvedValue({ model: 'deepseek/deepseek-v4-pro', temperature: 0.3, autoCompile: false });
+
+    const { settingsSetCommand } = await loadSettingsCommands();
+
+    await settingsSetCommand('autoCompile', 'true', { scope: 'repo' });
+
+    expect(mockWriteRepoConfig).toHaveBeenCalledWith('/tmp/repo', {
+      model: 'deepseek/deepseek-v4-pro',
+      temperature: 0.3,
+      autoCompile: true,
+    });
+  });
+
+  it('settingsSetCommand rejects invalid autoCompile value', async () => {
+    mockRequireRepo.mockResolvedValue('/tmp/repo');
+    mockReadRepoConfig.mockResolvedValue({ model: 'deepseek/deepseek-v4-pro', temperature: 0.3, autoCompile: false });
+
+    const { settingsSetCommand } = await loadSettingsCommands();
+
+    const spy = jest.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+    try {
+      await settingsSetCommand('autoCompile', 'yes', { scope: 'repo' });
+    } catch {
+      // Expected to throw due to process.exit
+    }
+    expect(spy).toHaveBeenCalledWith(1);
+    spy.mockRestore();
+  });
+
+  it('settingsSetCommand accepts autoCompile=false', async () => {
+    mockRequireRepo.mockResolvedValue('/tmp/repo');
+    mockReadRepoConfig.mockResolvedValue({ model: 'deepseek/deepseek-v4-pro', temperature: 0.3, autoCompile: true });
+
+    const { settingsSetCommand } = await loadSettingsCommands();
+
+    await settingsSetCommand('autoCompile', 'false', { scope: 'repo' });
+
+    expect(mockWriteRepoConfig).toHaveBeenCalledWith('/tmp/repo', {
+      model: 'deepseek/deepseek-v4-pro',
+      temperature: 0.3,
+      autoCompile: false,
+    });
+  });
+
+  it('settingsGetCommand returns autoCompile value', async () => {
+    mockRequireRepo.mockResolvedValue('/tmp/repo');
+    mockReadRepoConfig.mockResolvedValue({ model: 'deepseek/deepseek-v4-pro', temperature: 0.3, autoCompile: true });
+
+    const { settingsGetCommand } = await loadSettingsCommands();
+    const stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    await settingsGetCommand('autoCompile', { scope: 'repo' });
+
+    expect(String(stdoutSpy.mock.calls[0]?.[0] ?? '')).toContain('autoCompile=true');
+  });
 });
