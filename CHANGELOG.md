@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/telepat-io/lore/compare/lore-v0.1.5...lore-v0.1.6) (2026-05-21)
+
+
+### Features
+
+* implement autoCompile feature across commands and settings ([d06773c](https://github.com/telepat-io/lore/commit/d06773cc4e0c1a677d306a38928f74ff5e7e52f6))
+
 ## [0.1.5](https://github.com/telepat-io/lore/compare/lore-v0.1.4...lore-v0.1.5) (2026-05-05)
 
 
