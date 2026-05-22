@@ -88,8 +88,8 @@ If a file does not match known conversation patterns, Lore falls back to generic
 
 Lore routes URL ingestion based on the file extension in the URL path:
 
-- **Document extensions** (`.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub`): downloaded to a temp file then processed via Replicate Marker — identical to local document ingestion. Requires `REPLICATE_API_TOKEN`.
-- **Image extensions** (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`): downloaded to a temp file then processed via Replicate Vision — identical to local image ingestion. Requires `REPLICATE_API_TOKEN`.
+- **Document extensions** (`.pdf`, `.docx`, `.pptx`, `.xlsx`, `.epub`): downloaded to a temp file then processed via Replicate Marker — identical to local document ingestion. Requires `TELEPAT_REPLICATE_TOKEN`.
+- **Image extensions** (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`): downloaded to a temp file then processed via Replicate Vision — identical to local image ingestion. Requires `TELEPAT_REPLICATE_TOKEN`.
 - **All other URLs** (web pages, HTML, etc.):
   - When both `LORE_CF_ACCOUNT_ID` and `LORE_CF_TOKEN` are set, Lore calls the Cloudflare Browser Run `/markdown` endpoint, which returns markdown directly without local HTML conversion.
   - On Cloudflare failure or a non-string response, Lore logs the fallback and uses Jina.

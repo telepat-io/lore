@@ -46,8 +46,8 @@ Lore resolves values in this order:
 
 Examples of effective precedence:
 
-- `OPENROUTER_API_KEY` overrides stored OpenRouter secret
-- `REPLICATE_API_TOKEN` (or legacy `REPLICATE_API_KEY`) overrides stored Replicate secret
+- `TELEPAT_OPENROUTER_KEY` overrides stored OpenRouter secret
+- `TELEPAT_REPLICATE_TOKEN` (or legacy `TELEPAT_REPLICATE_TOKEN`) overrides stored Replicate secret
 - `LORE_CF_TOKEN` overrides stored Cloudflare token
 - `LORE_CF_ACCOUNT_ID` overrides global config Cloudflare account ID
 
@@ -131,7 +131,7 @@ lore settings set maxTokens - --scope repo
 | `Unknown key for scope` | Key does not belong to provided scope | Use global keys for credentials, repo keys for model/runtime |
 | `temperature must be a number` | Non-numeric value provided | Use a numeric temperature between `0` and `2` |
 | `maxTokens must be an integer` | Non-integer value provided | Use a positive integer or unset it |
-| Secret set fails in CI/container | Keychain unavailable or disabled | Use env vars and/or set `LORE_DISABLE_KEYTAR=true` |
+| Secret set fails in CI/container | Keychain unavailable or disabled | Use env vars and/or set `TELEPAT_DISABLE_KEYTAR=true` |
 
 ## Related Docs
 

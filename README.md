@@ -80,15 +80,15 @@ Lore ships with a first-class MCP server for agent integration:
 ## Security And Trust
 
 - Secrets are stored in OS secure storage (Keychain on macOS, platform equivalent on Linux/Windows) when available.
-- If secure storage is unavailable or explicitly disabled (`LORE_DISABLE_KEYTAR=true`), secret writes fail with guidance to use environment variables.
+- If secure storage is unavailable or explicitly disabled (`TELEPAT_DISABLE_KEYTAR=true`), secret writes fail with guidance to use environment variables.
 - Lore does not persist secrets in plaintext fallback files.
 
 Environment variables (highest precedence at runtime):
 
-- `OPENROUTER_API_KEY`
-- `REPLICATE_API_TOKEN`
+- `TELEPAT_OPENROUTER_KEY`
+- `TELEPAT_REPLICATE_TOKEN`
 - `LORE_CF_ACCOUNT_ID`, `LORE_CF_TOKEN`
-- `LORE_DISABLE_KEYTAR`
+- `TELEPAT_DISABLE_KEYTAR`
 
 ## Documentation And Support
 

@@ -62,22 +62,22 @@ lore settings unset cloudflareAccountId --scope global
 
 Environment variables are also supported:
 
-- `OPENROUTER_API_KEY`
-- `REPLICATE_API_TOKEN` (legacy alias supported: `REPLICATE_API_KEY`)
+- `TELEPAT_OPENROUTER_KEY`
+- `TELEPAT_REPLICATE_TOKEN` (legacy alias supported: `TELEPAT_REPLICATE_TOKEN`)
 - `LORE_CF_ACCOUNT_ID`
 - `LORE_CF_TOKEN`
-- `LORE_DISABLE_KEYTAR` (set `true` to disable keychain access)
+- `TELEPAT_DISABLE_KEYTAR` (set `true` to disable keychain access)
 
 ## CI and Container Pattern
 
 For non-interactive environments, prefer env vars:
 
 ```bash
-export OPENROUTER_API_KEY="..."
-export REPLICATE_API_TOKEN="..."
+export TELEPAT_OPENROUTER_KEY="..."
+export TELEPAT_REPLICATE_TOKEN="..."
 export LORE_CF_ACCOUNT_ID="..."
 export LORE_CF_TOKEN="..."
-export LORE_DISABLE_KEYTAR=true
+export TELEPAT_DISABLE_KEYTAR=true
 ```
 
 This avoids keychain dependencies in ephemeral environments.
@@ -92,9 +92,9 @@ This avoids keychain dependencies in ephemeral environments.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `No OpenRouter API key configured` | No key in env or keychain | Set `OPENROUTER_API_KEY` or run settings command |
-| Secret write fails with keychain error | Keychain unavailable in environment | Set env vars and `LORE_DISABLE_KEYTAR=true` |
-| Replicate parser fails on document/image ingest | `REPLICATE_API_TOKEN` missing | Set Replicate token globally or via env var |
+| `No OpenRouter API key configured` | No key in env or keychain | Set `TELEPAT_OPENROUTER_KEY` or run settings command |
+| Secret write fails with keychain error | Keychain unavailable in environment | Set env vars and `TELEPAT_DISABLE_KEYTAR=true` |
+| Replicate parser fails on document/image ingest | `TELEPAT_REPLICATE_TOKEN` missing | Set Replicate token globally or via env var |
 | Cloudflare URL fetch not used | Missing Cloudflare account ID or token | Set both `LORE_CF_ACCOUNT_ID` and `LORE_CF_TOKEN` |
 
 When keychain access is disabled or unavailable, Lore does not fall back to plaintext secret files and will require env vars for secret values.

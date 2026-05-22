@@ -15,7 +15,7 @@ sidebar_position: 2
 |---|---|
 | macOS | Keychain-backed secret storage is available by default |
 | Linux | Secret storage depends on keyring/libsecret availability |
-| CI/containers | Prefer environment variables and set `LORE_DISABLE_KEYTAR=true` |
+| CI/containers | Prefer environment variables and set `TELEPAT_DISABLE_KEYTAR=true` |
 
 ## Install
 
@@ -56,7 +56,7 @@ lore settings list --scope all
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `command not found: lore` | Global npm bin not on PATH | Ensure npm global bin is in shell PATH |
-| Secret set fails in headless environment | Keychain unavailable | Use env vars + `LORE_DISABLE_KEYTAR=true` |
+| Secret set fails in headless environment | Keychain unavailable | Use env vars + `TELEPAT_DISABLE_KEYTAR=true` |
 | Video URL ingests no transcript | `yt-dlp` missing or no subtitles | Install `yt-dlp` or rely on URL fallback |
 
 ## Related Docs

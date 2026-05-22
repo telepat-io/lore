@@ -39,10 +39,9 @@ beforeEach(async () => {
   mockSaveSecrets.mockReset();
   mockSaveSecrets.mockResolvedValue(undefined);
   mockRequireRepo.mockReset();
-  delete process.env['LORE_DISABLE_KEYTAR'];
-  delete process.env['OPENROUTER_API_KEY'];
-  delete process.env['REPLICATE_API_TOKEN'];
-  delete process.env['REPLICATE_API_KEY'];
+  delete process.env['TELEPAT_DISABLE_KEYTAR'];
+  delete process.env['TELEPAT_OPENROUTER_KEY'];
+  delete process.env['TELEPAT_REPLICATE_TOKEN'];
   delete process.env['LORE_CF_ACCOUNT_ID'];
   delete process.env['LORE_CF_TOKEN'];
 });
@@ -64,8 +63,8 @@ describe('config global settings', () => {
       cloudflareToken: 'cf-secret',
     });
 
-    process.env['OPENROUTER_API_KEY'] = 'from-env';
-    process.env['REPLICATE_API_TOKEN'] = 'replicate-env';
+    process.env['TELEPAT_OPENROUTER_KEY'] = 'from-env';
+    process.env['TELEPAT_REPLICATE_TOKEN'] = 'replicate-env';
     process.env['LORE_CF_TOKEN'] = 'cf-env';
 
     const { readGlobalConfig } = await loadConfigModule(configDir);

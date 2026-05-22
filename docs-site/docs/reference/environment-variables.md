@@ -8,12 +8,12 @@ Environment variables have highest runtime precedence over keychain and config-f
 
 | Variable | Description |
 |---|---|
-| `OPENROUTER_API_KEY` | OpenRouter API key for compile/query/explain/angela |
-| `REPLICATE_API_TOKEN` | Replicate token for Marker/Vision ingest parsers |
-| `REPLICATE_API_KEY` | Legacy alias for Replicate token |
+| `TELEPAT_OPENROUTER_KEY` | OpenRouter API key for compile/query/explain/angela |
+| `TELEPAT_REPLICATE_TOKEN` | Replicate token for Marker/Vision ingest parsers |
+| `TELEPAT_REPLICATE_TOKEN` | Legacy alias for Replicate token |
 | `LORE_CF_ACCOUNT_ID` | Cloudflare account ID for Browser Rendering |
 | `LORE_CF_TOKEN` | Cloudflare API token for Browser Rendering |
-| `LORE_DISABLE_KEYTAR` | When `true`, disables keychain access and requires env vars for secrets |
+| `TELEPAT_DISABLE_KEYTAR` | When `true`, disables keychain access and requires env vars for secrets |
 | `LORE_QUERY_NORMALIZE` | When `true`, enables conservative query text cleanup by default |
 | `LORE_LOG_MAX_FILES` | Max number of `.lore/logs/*.jsonl` files to retain before rotation |
 
@@ -27,8 +27,8 @@ Lore resolves values in this order:
 
 Examples:
 
-- `OPENROUTER_API_KEY` overrides keychain-stored OpenRouter value
-- `REPLICATE_API_TOKEN` overrides keychain-stored Replicate value
+- `TELEPAT_OPENROUTER_KEY` overrides keychain-stored OpenRouter value
+- `TELEPAT_REPLICATE_TOKEN` overrides keychain-stored Replicate value
 - `LORE_CF_TOKEN` overrides keychain-stored Cloudflare token
 - `LORE_CF_ACCOUNT_ID` overrides global config account ID
 
@@ -53,11 +53,11 @@ lore query --normalize-question "wat did we decied about deploy freeze"
 ### CI/container profile
 
 ```bash
-export OPENROUTER_API_KEY="..."
-export REPLICATE_API_TOKEN="..."
+export TELEPAT_OPENROUTER_KEY="..."
+export TELEPAT_REPLICATE_TOKEN="..."
 export LORE_CF_ACCOUNT_ID="..."
 export LORE_CF_TOKEN="..."
-export LORE_DISABLE_KEYTAR=true
+export TELEPAT_DISABLE_KEYTAR=true
 ```
 
 ### Local power-user profile

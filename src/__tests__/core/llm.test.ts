@@ -59,13 +59,13 @@ describe('createClient', () => {
 
   it('throws when no API key configured', async () => {
     mockReadGlobalConfig.mockResolvedValue({ openrouterApiKey: undefined });
-    const prev = process.env['OPENROUTER_API_KEY'];
-    delete process.env['OPENROUTER_API_KEY'];
+    const prev = process.env['TELEPAT_OPENROUTER_KEY'];
+    delete process.env['TELEPAT_OPENROUTER_KEY'];
 
     const { createClient } = await loadLlmModule();
     await expect(createClient('/tmp/repo')).rejects.toThrow('No OpenRouter API key configured');
 
-    process.env['OPENROUTER_API_KEY'] = prev;
+    process.env['TELEPAT_OPENROUTER_KEY'] = prev;
   });
 
   it('reads model config from repo config', async () => {

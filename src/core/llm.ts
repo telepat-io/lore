@@ -25,8 +25,8 @@ export async function createClient(cwd: string): Promise<{ client: OpenAI; model
   const global = await readGlobalConfig();
   const repo = await readRepoConfig(root);
 
-  const apiKey = global.openrouterApiKey ?? process.env['OPENROUTER_API_KEY'];
-  if (!apiKey) throw new Error('No OpenRouter API key configured. Run `lore settings` or set OPENROUTER_API_KEY.');
+  const apiKey = global.openrouterApiKey ?? process.env['TELEPAT_OPENROUTER_KEY'];
+  if (!apiKey) throw new Error('No OpenRouter API key configured. Run `lore settings` or set TELEPAT_OPENROUTER_KEY.');
 
   const client = new OpenAI({
     apiKey,

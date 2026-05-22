@@ -27,7 +27,7 @@ describe('parseImage', () => {
     mockReplicate.mockReset();
     mockReadFile.mockReset();
 
-    process.env['REPLICATE_API_TOKEN'] = 'replicate-token';
+    process.env['TELEPAT_REPLICATE_TOKEN'] = 'replicate-token';
     mockReadFile.mockResolvedValue(Buffer.from('image-bytes'));
     mockReplicate.mockImplementation(() => ({ run: mockRun }));
   });

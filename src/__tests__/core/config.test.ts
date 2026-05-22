@@ -97,9 +97,9 @@ describe('global config', () => {
     await fs.rm(globalTmp, { recursive: true, force: true });
     delete process.env['LORE_CF_ACCOUNT_ID'];
     delete process.env['LORE_CF_TOKEN'];
-    delete process.env['OPENROUTER_API_KEY'];
-    delete process.env['REPLICATE_API_TOKEN'];
-    delete process.env['LORE_DISABLE_KEYTAR'];
+    delete process.env['TELEPAT_OPENROUTER_KEY'];
+    delete process.env['TELEPAT_REPLICATE_TOKEN'];
+    delete process.env['TELEPAT_DISABLE_KEYTAR'];
   });
 
   async function loadConfigModule(
@@ -135,8 +135,8 @@ describe('global config', () => {
   it('reads global config from env variables', async () => {
     const { readGlobalConfig } = await loadConfigModule({}, {
       LORE_CF_ACCOUNT_ID: 'cf-account',
-      OPENROUTER_API_KEY: 'openrouter-key',
-      REPLICATE_API_TOKEN: 'replicate-token',
+      TELEPAT_OPENROUTER_KEY: 'openrouter-key',
+      TELEPAT_REPLICATE_TOKEN: 'replicate-token',
       LORE_CF_TOKEN: 'cf-token',
     });
 

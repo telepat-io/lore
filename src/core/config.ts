@@ -37,7 +37,7 @@ export interface RepoConfig {
 }
 
 function readDisableKeytarEnv(): boolean {
-  const value = process.env['LORE_DISABLE_KEYTAR'];
+  const value = process.env['TELEPAT_DISABLE_KEYTAR'];
   return value?.trim().toLowerCase() === 'true';
 }
 
@@ -54,11 +54,11 @@ export async function readGlobalConfig(): Promise<GlobalConfig> {
   const secretOptions: SecretStoreOptions = { disableKeytar: readDisableKeytarEnv() };
   const [fileConfig, secrets] = await Promise.all([readGlobalNonSecretConfig(), loadSecrets(secretOptions)]);
 
-  const envReplicate = process.env['REPLICATE_API_TOKEN'] ?? process.env['REPLICATE_API_KEY'];
+  const envReplicate = process.env['TELEPAT_REPLICATE_TOKEN'];
 
   return {
     cloudflareAccountId: process.env['LORE_CF_ACCOUNT_ID'] ?? fileConfig.cloudflareAccountId,
-    openrouterApiKey: process.env['OPENROUTER_API_KEY'] ?? secrets.openrouterApiKey ?? undefined,
+    openrouterApiKey: process.env['TELEPAT_OPENROUTER_KEY'] ?? secrets.openrouterApiKey ?? undefined,
     replicateApiToken: envReplicate ?? secrets.replicateApiToken ?? undefined,
     cloudflareToken: process.env['LORE_CF_TOKEN'] ?? secrets.cloudflareToken ?? undefined,
   };

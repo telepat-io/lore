@@ -94,8 +94,8 @@ Replicate models are used for ingest parsing, not for compile/query/explain gene
 ## Notes
 
 - OpenRouter model choice is per-repo (`.lore/config.json`).
-- OpenRouter credentials can be set via `lore settings set openrouterApiKey <value> --scope global` or `OPENROUTER_API_KEY`.
-- Replicate credentials can be set via `lore settings set replicateApiToken <value> --scope global` or `REPLICATE_API_TOKEN`.
+- OpenRouter credentials can be set via `lore settings set openrouterApiKey <value> --scope global` or `TELEPAT_OPENROUTER_KEY`.
+- Replicate credentials can be set via `lore settings set replicateApiToken <value> --scope global` or `TELEPAT_REPLICATE_TOKEN`.
 - Environment variables take precedence over stored settings at runtime.
 
 ## Related Docs

@@ -105,7 +105,7 @@ function warnKeytarUnavailable(details: string): void {
 
   hasWarnedAboutUnavailableKeytar = true;
   console.warn(
-    `System keychain unavailable (${details}). Falling back to environment variables for secrets. Set LORE_DISABLE_KEYTAR=true to skip keychain access in this environment.`,
+    `System keychain unavailable (${details}). Falling back to environment variables for secrets. Set TELEPAT_DISABLE_KEYTAR=true to skip keychain access in this environment.`,
   );
 }
 
@@ -145,14 +145,14 @@ export async function loadSecrets(options: SecretStoreOptions = {}): Promise<Sec
 export async function saveSecrets(secrets: Partial<SecretSettings>, options: SecretStoreOptions = {}): Promise<void> {
   if (shouldDisableKeytar(options)) {
     throw new KeytarUnavailableError(
-      'System keychain access is disabled by LORE_DISABLE_KEYTAR=true. Use OPENROUTER_API_KEY, REPLICATE_API_TOKEN, and LORE_CF_TOKEN instead.',
+      'System keychain access is disabled by TELEPAT_DISABLE_KEYTAR=true. Use TELEPAT_OPENROUTER_KEY, TELEPAT_REPLICATE_TOKEN, and LORE_CF_TOKEN instead.',
     );
   }
 
   const keytar = await loadKeytar();
   if (!keytar) {
     throw new KeytarUnavailableError(
-      'System keychain unavailable while saving credentials. Use OPENROUTER_API_KEY, REPLICATE_API_TOKEN, and LORE_CF_TOKEN instead.',
+      'System keychain unavailable while saving credentials. Use TELEPAT_OPENROUTER_KEY, TELEPAT_REPLICATE_TOKEN, and LORE_CF_TOKEN instead.',
     );
   }
 
@@ -185,7 +185,7 @@ async function saveSecretValue(keytar: KeytarLike, account: string, value: strin
     if (isKeytarAvailabilityError(error)) {
       const message = error instanceof Error ? error.message : 'unknown error';
       throw new KeytarUnavailableError(
-        `System keychain unavailable while saving credentials (${message}). Use OPENROUTER_API_KEY, REPLICATE_API_TOKEN, and LORE_CF_TOKEN instead.`,
+        `System keychain unavailable while saving credentials (${message}). Use TELEPAT_OPENROUTER_KEY, TELEPAT_REPLICATE_TOKEN, and LORE_CF_TOKEN instead.`,
       );
     }
 

@@ -78,15 +78,15 @@ Lore 内置一流的 MCP 服务器，供智能体集成：
 ## 安全与信任
 
 - 密钥在 OS 安全存储可用时保存（macOS Keychain、Linux/Windows 平台等效工具）。
-- 如果安全存储不可用或显式禁用（`LORE_DISABLE_KEYTAR=true`），写入会失败并提示使用环境变量。
+- 如果安全存储不可用或显式禁用（`TELEPAT_DISABLE_KEYTAR=true`），写入会失败并提示使用环境变量。
 - Lore 不会以明文回退文件持久化密钥。
 
 运行时环境变量（最高优先级）：
 
-- `OPENROUTER_API_KEY`
-- `REPLICATE_API_TOKEN`
+- `TELEPAT_OPENROUTER_KEY`
+- `TELEPAT_REPLICATE_TOKEN`
 - `LORE_CF_ACCOUNT_ID`、`LORE_CF_TOKEN`
-- `LORE_DISABLE_KEYTAR`
+- `TELEPAT_DISABLE_KEYTAR`
 
 ## 文档与支持
 

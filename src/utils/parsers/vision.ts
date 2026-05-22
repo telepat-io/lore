@@ -3,10 +3,10 @@ import fs from 'fs/promises';
 
 /** Parse images via Replicate vision model for OCR/captioning */
 export async function parseImage(filePath: string): Promise<string> {
-  const apiToken = process.env['REPLICATE_API_TOKEN'];
+  const apiToken = process.env['TELEPAT_REPLICATE_TOKEN'];
   if (!apiToken) {
     throw new Error(
-      'Replicate API token required for image parsing. Set REPLICATE_API_TOKEN or run `lore settings`.'
+      'Replicate API token required for image parsing. Set TELEPAT_REPLICATE_TOKEN or run `lore settings`.'
     );
   }
 

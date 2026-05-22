@@ -3,10 +3,10 @@ import fs from 'fs/promises';
 
 /** Parse PDF, DOCX, PPTX, XLSX, EPUB via Replicate cuuupid/marker API */
 export async function parseWithMarker(filePath: string): Promise<string> {
-  const apiToken = process.env['REPLICATE_API_TOKEN'];
+  const apiToken = process.env['TELEPAT_REPLICATE_TOKEN'];
   if (!apiToken) {
     throw new Error(
-      'Replicate API token required for document parsing. Set REPLICATE_API_TOKEN or run `lore settings`.'
+      'Replicate API token required for document parsing. Set TELEPAT_REPLICATE_TOKEN or run `lore settings`.'
     );
   }
 
