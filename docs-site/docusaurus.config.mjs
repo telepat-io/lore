@@ -12,7 +12,7 @@ const config = {
 
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'zh-CN'],
   },
 
   presets: [
@@ -48,6 +48,7 @@ const config = {
         },
         items: [
           { type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Docs' },
+          { type: 'localeDropdown', position: 'right' },
           { href: 'https://github.com/telepat-io/lore', label: 'GitHub', position: 'right' },
         ],
       },
