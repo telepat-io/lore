@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/telepat-io/lore/compare/lore-v0.1.6...lore-v0.1.7) (2026-05-31)
+
+
+### Features
+
+* standardize env vars to TELEPAT_OPENROUTER_KEY, TELEPAT_REPLICATE_TOKEN, TELEPAT_DISABLE_KEYTAR ([17950f7](https://github.com/telepat-io/lore/commit/17950f75c7def8003f25e00004ee28325e66fcb6))
+
 ## [0.1.6](https://github.com/telepat-io/lore/compare/lore-v0.1.5...lore-v0.1.6) (2026-05-21)
 
 
