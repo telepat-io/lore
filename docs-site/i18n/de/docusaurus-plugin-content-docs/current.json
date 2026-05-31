@@ -1,0 +1,26 @@
+{
+  "version.label": {
+    "message": "Next",
+    "description": "The label for version current"
+  },
+  "sidebar.docs.category.Getting Started": {
+    "message": "Erste Schritte",
+    "description": "The label for category 'Getting Started' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Guides": {
+    "message": "Anleitungen",
+    "description": "The label for category 'Guides' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "Referenz",
+    "description": "The label for category 'Reference' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Technical": {
+    "message": "Technik",
+    "description": "The label for category 'Technical' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "Beitragen",
+    "description": "The label for category 'Contributing' in sidebar 'docs'"
+  }
+}
